@@ -9,7 +9,13 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-studio-mathri-change-me-xy
 
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+
+ALLOWED_HOSTS = [
+    "tiles-8o5p.vercel.app",
+    ".vercel.app",
+    "localhost",
+    "127.0.0.1",
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
