@@ -75,3 +75,7 @@ CF_API_TOKEN = os.getenv('CF_API_TOKEN', '')
 CF_CHAT_MODEL = "@cf/google/gemma-4-26b-a4b-it"
 CF_IMAGE_MODEL = "@cf/stabilityai/stable-diffusion-xl-base-1.0"
 CF_BASE_URL = f'https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/ai/run'
+
+WSGI_APPLICATION = 'studiomathri.wsgi.application'
+
+ASGI_APPLICATION = 'studiomathri.asgi.application'
