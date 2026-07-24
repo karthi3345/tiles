@@ -1,0 +1,110 @@
+{% extends 'tiles/base.html' %}
+{% block title %}AI Chat{% endblock %}
+
+{% block extra_head %}
+<style>
+.chat-container{height:calc(100vh - 80px)}
+.messages-area{scrollbar-width:thin;scrollbar-color:#cbd5e1 transparent}
+.messages-area::-webkit-scrollbar{width:6px}
+.messages-area::-webkit-scrollbar-track{background:transparent}
+.messages-area::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+.typing-indicator span{display:inline-block;width:8px;height:8px;border-radius:50%;background:#94a3b8;animation:typing 1.4s infinite ease-in-out}
+.typing-indicator span:nth-child(2){animation-delay:.2s}
+.typing-indicator span:nth-child(3){animation-delay:.4s}
+@keyframes typing{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+.msg-appear{animation:msgSlide .3s ease-out}
+@keyframes msgSlide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-container flex flex-col pt-20">
+    <div class="bg-white border-b border-slate-200 px-4 sm:px-6 py-4">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-brand-600/10 flex items-center justify-center">
+                    <iconify-icon icon="lucide:sparkles" class="text-xl text-brand-600"></iconify-icon>
+                </div>
+                <div>
+                    <h1 class="text-sm font-semibold text-slate-900">Studio Mathri AI</h1>
+                    <div class="flex items-center gap-1.5">
+                        <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span></span>
+                        <span class="text-xs text-slate-400">Mistral 7B · Cloudflare Workers AI</span>
+                    </div>
+                </div>
+            </div>
+            <button id="new-chat-btn" class="text-sm font-medium text-slate-500 hover:text-brand-600 flex items-center gap-1.5 transition-colors">
+                <iconify-icon icon="lucide:plus" class="text-base"></iconify-icon>
+                <span class="hidden sm:inline">New Chat</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="messages" class="messages-area flex-1 overflow-y-auto">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 py-8" id="messages-inner">
+            <div id="welcome-screen" class="flex flex-col items-center justify-center py-16">
+                <div class="w-16 h-16 rounded-2xl bg-brand-600/10 flex items-center justify-center mb-6">
+                    <iconify-icon icon="lucide:layout-grid" class="text-3xl text-brand-600"></iconify-icon>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-900 mb-2">Studio Mathri AI</h2>
+                <p class="text-slate-500 text-center max-w-md mb-8">Ask about tiles, markets, locations in any country, state, city, or village.</p>
+                <div class="grid sm:grid-cols-2 gap-3 w-full max-w-lg">
+                    <button class="suggestion-btn text-left px-5 py-4 rounded-xl border border-slate-200 hover:border-brand-300 hover:bg-blue-50/50 transition-all group" data-prompt="What are the top 5 tile producing countries and their production volumes?">
+                        <iconify-icon icon="lucide:bar-chart-3" class="text-lg text-brand-500 mb-2 block"></iconify-icon>
+                        <p class="text-sm font-medium text-slate-700 group-hover:text-brand-600 transition-colors">Top 5 producing countries?</p>
+                    </button>
+                    <button class="suggestion-btn text-left px-5 py-4 rounded-xl border border-slate-200 hover:border-brand-300 hover:bg-blue-50/50 transition-all group" data-prompt="Compare tile industries of China and India - production, quality, export markets">
+                        <iconify-icon icon="lucide:git-compare" class="text-lg text-brand-500 mb-2 block"></iconify-icon>
+                        <p class="text-sm font-medium text-slate-700 group-hover:text-brand-600 transition-colors">China vs India comparison</p>
+                    </button>
+                    <button class="suggestion-btn text-left px-5 py-4 rounded-xl border border-slate-200 hover:border-brand-300 hover:bg-blue-50/50 transition-all group" data-prompt="What tile types are best for a bathroom in India? Give me specific product recommendations.">
+                        <iconify-icon icon="lucide:bath" class="text-lg text-brand-500 mb-2 block"></iconify-icon>
+                        <p class="text-sm font-medium text-slate-700 group-hover:text-brand-600 transition-colors">Best bathroom tiles in India</p>
+                    </button>
+                    <button class="suggestion-btn text-left px-5 py-4 rounded-xl border border-slate-200 hover:border-brand-300 hover:bg-blue-50/50 transition-all group" data-prompt="Explain the difference between porcelain, ceramic, and vitrified tiles with use cases">
+                        <iconify-icon icon="lucide:help-circle" class="text-lg text-brand-500 mb-2 block"></iconify-icon>
+                        <p class="text-sm font-medium text-slate-700 group-hover:text-brand-600 transition-colors">Porcelain vs Ceramic vs Vitrified</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white border-t border-slate-200 px-4 sm:px-6 py-4">
+        <div class="max-w-4xl mx-auto">
+            <form id="chat-form" class="flex items-end gap-3">
+                <div class="flex-1">
+                    <textarea id="chat-input" rows="1" placeholder="Ask about tiles, markets, locations..." class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:bg-white resize-none transition-all" style="max-height:120px"></textarea>
+                </div>
+                <button type="submit" id="send-btn" class="flex-shrink-0 w-11 h-11 rounded-xl bg-brand-600 hover:bg-brand-700 text-white flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <iconify-icon icon="lucide:send" class="text-lg"></iconify-icon>
+                </button>
+            </form>
+            <p class="text-[10px] text-slate-400 mt-2 text-center">Studio Mathri AI may make mistakes. Verify important data.</p>
+        </div>
+    </div>
+</div>
+<input type="hidden" id="session-id" value="">
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function(){
+    const form=document.getElementById('chat-form'),input=document.getElementById('chat-input'),sendBtn=document.getElementById('send-btn'),messagesInner=document.getElementById('messages-inner'),messagesArea=document.getElementById('messages'),sessionIdInput=document.getElementById('session-id'),newChatBtn=document.getElementById('new-chat-btn');
+    let isProcessing=false;
+    input.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';sendBtn.disabled=!this.value.trim()});
+    input.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(this.value.trim()&&!isProcessing)form.dispatchEvent(new Event('submit'))}});
+    document.querySelectorAll('.suggestion-btn').forEach(b=>{b.addEventListener('click',function(){input.value=this.dataset.prompt;input.dispatchEvent(new Event('input'));form.dispatchEvent(new Event('submit'))})});
+    newChatBtn.addEventListener('click',function(){sessionIdInput.value='';messagesInner.innerHTML='';messagesInner.appendChild(createWelcome());input.value='';input.style.height='auto';sendBtn.disabled=true});
+    function createWelcome(){const d=document.createElement('div');d.id='welcome-screen';d.className='flex flex-col items-center justify-center py-16';d.innerHTML='<div class="w-16 h-16 rounded-2xl bg-brand-600/10 flex items-center justify-center mb-6"><iconify-icon icon="lucide:layout-grid" class="text-3xl text-brand-600"></iconify-icon></div><h2 class="text-2xl font-bold text-slate-900 mb-2">Studio Mathri AI</h2><p class="text-slate-500 text-center max-w-md mb-8">Ask about tiles, markets, locations in any country, state, city, or village.</p>';return d}
+    function addMsg(role,content){const ws=document.getElementById('welcome-screen');if(ws)ws.remove();const d=document.createElement('div');d.className='msg-appear mb-6';if(role==='user'){d.innerHTML='<div class="flex justify-end"><div class="max-w-[80%] bg-brand-600 text-white rounded-2xl rounded-br-md px-5 py-3"><p class="text-sm leading-relaxed whitespace-pre-wrap">'+escHtml(content)+'</p></div></div>'}else{d.innerHTML='<div class="flex gap-3"><div class="w-8 h-8 rounded-lg bg-brand-600/10 flex items-center justify-center flex-shrink-0 mt-1"><iconify-icon icon="lucide:sparkles" class="text-sm text-brand-600"></iconify-icon></div><div class="max-w-[80%] bg-slate-100 rounded-2xl rounded-bl-md px-5 py-3"><div class="text-sm leading-relaxed prose prose-slate prose-sm max-w-none">'+fmtMd(content)+'</div></div></div>'}messagesInner.appendChild(d);scrollBottom()}
+    function addTyping(){const ws=document.getElementById('welcome-screen');if(ws)ws.remove();const d=document.createElement('div');d.id='typing-indicator';d.className='msg-appear mb-6';d.innerHTML='<div class="flex gap-3"><div class="w-8 h-8 rounded-lg bg-brand-600/10 flex items-center justify-center flex-shrink-0 mt-1"><iconify-icon icon="lucide:sparkles" class="text-sm text-brand-600"></iconify-icon></div><div class="bg-slate-100 rounded-2xl rounded-bl-md px-5 py-4"><div class="typing-indicator flex gap-1.5"><span></span><span></span><span></span></div></div></div>';messagesInner.appendChild(d);scrollBottom()}
+    function rmTyping(){const e=document.getElementById('typing-indicator');if(e)e.remove()}
+    function scrollBottom(){messagesArea.scrollTop=messagesArea.scrollHeight}
+    function escHtml(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
+    function fmtMd(t){let h=escHtml(t);h=h.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');h=h.replace(/\*(.*?)\*/g,'<em>$1</em>');h=h.replace(/^[-•]\s+(.+)$/gm,'<li>$1</li>');h=h.replace(/(<li>.*<\/li>)/s,'<ul class="list-disc pl-5 my-2">$1</ul>');h=h.replace(/^\d+\.\s+(.+)$/gm,'<li>$1</li>');h=h.replace(/\n\n/g,'</p><p class="mt-2">');h=h.replace(/\n/g,'<br>');return'<p>'+h+'</p>'}
+    form.addEventListener('submit',async function(e){e.preventDefault();const msg=input.value.trim();if(!msg||isProcessing)return;isProcessing=true;sendBtn.disabled=true;addMsg('user',msg);input.value='';input.style.height='auto';addTyping();
+    try{const r=await fetch('{% url "tiles:chat" %}',{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},body:JSON.stringify({message:msg,session_id:sessionIdInput.value})});const data=await r.json();rmTyping();if(data.success){addMsg('assistant',data.response);if(data.session_id)sessionIdInput.value=data.session_id}else addMsg('assistant','⚠️ '+(data.error||'Error'))}catch(err){rmTyping();addMsg('assistant','⚠️ Connection error. Please try again.')}
+    isProcessing=false;sendBtn.disabled=!input.value.trim();input.focus()})})();
+</script>
+{% endblock %}

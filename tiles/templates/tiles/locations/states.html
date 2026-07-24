@@ -1,0 +1,85 @@
+{% extends 'tiles/base.html' %}
+{% block title %}{{ country.name }} States{% endblock %}
+
+{% block content %}
+<section class="pt-28 pb-24 bg-slate-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {% include 'tiles/components/breadcrumb.html' %}
+
+        <!-- Country Header -->
+        <div class="flex flex-col lg:flex-row lg:items-start gap-8 mb-12">
+            <div class="flex-1">
+                <div class="flex items-center gap-4 mb-4">
+                    <span class="text-6xl">{{ country.flag_emoji }}</span>
+                    <div>
+                        <h1 class="text-3xl lg:text-5xl font-bold tracking-tight text-slate-900">{{ country.name }}</h1>
+                        <p class="text-base text-slate-500 mt-1">{{ country.continent }} · {{ states|length }} {{ country.states.first.state_type|default:"States" }} · All tiles available</p>
+                    </div>
+                </div>
+                <p class="text-sm text-slate-600 leading-relaxed max-w-3xl">{{ country.description }}</p>
+            </div>
+        </div>
+
+        <!-- States Grid -->
+        <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+            <iconify-icon icon="lucide:map" class="text-brand-600"></iconify-icon>
+            All {{ country.states.first.state_type|default:"States" }}
+        </h2>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-16">
+            {% for state in states %}
+            <a href="{% url 'tiles:cities' country_slug=country.slug state_slug=state.slug %}" class="group bg-white rounded-2xl border border-slate-200/60 hover:border-brand-300 hover:shadow-xl hover:shadow-blue-500/5 p-5 transition-all duration-300">
+                <div class="flex items-start justify-between mb-2">
+                    <h3 class="text-base font-semibold text-slate-900 group-hover:text-brand-600 transition-colors">{{ state.name }}</h3>
+                    {% if state.is_tile_hub %}
+                    <iconify-icon icon="lucide:factory" class="text-amber-500 text-lg flex-shrink-0" title="Tile Manufacturing Hub"></iconify-icon>
+                    {% endif %}
+                </div>
+                <p class="text-xs text-slate-400 mb-3">{{ state.state_type }}</p>
+                {% if state.description %}
+                <p class="text-xs text-slate-500 line-clamp-2 mb-3">{{ state.description }}</p>
+                {% endif %}
+                <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+                    <span class="text-xs font-medium text-slate-500">{{ state.annotated_city_count }} cities</span>
+                    <iconify-icon icon="lucide:arrow-right" class="text-sm text-slate-300 group-hover:text-brand-500 group-hover:translate-x-1 transition-all"></iconify-icon>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- Available Tiles Preview -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <iconify-icon icon="lucide:layers" class="text-brand-600"></iconify-icon>
+                    Tiles Available in {{ country.name }}
+                </h2>
+                <a href="{% url 'tiles:tile_catalog' %}?country={{ country.slug }}" class="text-sm font-medium text-brand-600 hover:text-brand-700 flex items-center gap-1">
+                    View all <iconify-icon icon="lucide:arrow-right"></iconify-icon>
+                </a>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {% for tile in tiles %}
+                <a href="{% url 'tiles:tile_detail' slug=tile.slug %}" class="group bg-white rounded-2xl border border-slate-200/60 overflow-hidden hover:shadow-lg hover:shadow-blue-500/5 transition-all">
+                    <div class="aspect-[4/3] bg-slate-100 relative overflow-hidden">
+                        {% if tile.image %}
+                        <img src="{{ tile.image.url }}" alt="{{ tile.name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy">
+                        {% else %}
+                        <div class="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                            <iconify-icon icon="lucide:image" class="text-3xl mb-1"></iconify-icon>
+                            <span class="text-[9px] font-medium uppercase tracking-wider">No design yet</span>
+                        </div>
+                        {% endif %}
+                        <span class="absolute top-2 left-2 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full {% if tile.category.tile_type == 'floor' %}bg-slate-900 text-white{% elif tile.category.tile_type == 'wall' %}bg-brand-600 text-white{% elif tile.category.tile_type == 'special' %}bg-amber-600 text-white{% else %}bg-emerald-600 text-white{% endif %}">{{ tile.category.get_tile_type_display }}</span>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="text-xs font-semibold text-slate-900 group-hover:text-brand-600 transition-colors line-clamp-2">{{ tile.name }}</h3>
+                        <p class="text-xs font-bold text-brand-600 mt-2">{{ tile.price_display }}</p>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

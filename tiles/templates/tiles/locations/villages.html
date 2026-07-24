@@ -1,0 +1,109 @@
+{% extends 'tiles/base.html' %}
+{% block title %}{{ city.name }} Areas{% endblock %}
+
+{% block content %}
+<section class="pt-28 pb-24 bg-slate-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {% include 'tiles/components/breadcrumb.html' %}
+
+        <div class="mb-10">
+            <h1 class="text-3xl lg:text-4xl font-bold tracking-tight text-slate-900">{{ city.name }}</h1>
+            <p class="text-base text-slate-500 mt-2">
+    {{ country.flag_emoji }}
+    {{ state.name }}, {{ country.name }}
+    · {{ city.city_type }}
+    · {{ city.village_count }} areas
+    · All tiles available
+</p>
+            {% if city.description %}
+            <p class="text-sm text-slate-600 mt-3 max-w-3xl">{{ city.description }}</p>
+            {% endif %}
+        </div>
+
+        {% if village %}
+        <!-- Single Village View -->
+        <div class="bg-white rounded-2xl border border-slate-200/60 p-6 lg:p-8 mb-8">
+            <h2 class="text-2xl font-bold text-slate-900 mb-2">{{ village.name }}</h2>
+            <p class="text-sm text-slate-500">{{ city.name }}, {{ state.name }}, {{ country.name }}</p>
+            {% if village.pincode %}
+            <p class="text-sm text-slate-400 mt-1">Pincode: {{ village.pincode }}</p>
+            {% endif %}
+            {% if village.description %}
+            <p class="text-sm text-slate-600 mt-3">{{ village.description }}</p>
+            {% endif %}
+            {% if showrooms %}
+            <div class="mt-6 pt-6 border-t border-slate-100">
+                <h3 class="text-sm font-semibold text-slate-900 mb-3">Showrooms in {{ village.name }}</h3>
+                <div class="space-y-2">
+                    {% for sr in showrooms %}
+                    <div class="flex items-center gap-2 text-sm text-slate-600">
+                        <iconify-icon icon="lucide:store" class="text-brand-500"></iconify-icon>
+                        {{ sr.name }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <!-- All Villages List -->
+        <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+            <iconify-icon icon="lucide:map-pin" class="text-brand-600"></iconify-icon>
+            All Areas / Villages
+        </h2>
+
+        <div class="bg-white rounded-2xl border border-slate-200/60 overflow-hidden mb-16">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-px bg-slate-100">
+                {% for v in villages %}
+                <a href="{% url 'tiles:village_tiles' country_slug=country.slug state_slug=state.slug city_slug=city.slug village_slug=v.slug %}" class="group flex items-center gap-3 px-5 py-4 bg-white hover:bg-blue-50/50 transition-colors">
+                    <iconify-icon icon="lucide:map-pin" class="text-slate-300 group-hover:text-brand-500 transition-colors flex-shrink-0"></iconify-icon>
+                    <div class="min-w-0">
+                        <p class="text-sm font-medium text-slate-900 group-hover:text-brand-600 transition-colors truncate">{{ v.name }}</p>
+                        <p class="text-[10px] text-slate-400">{{ v.area_type }}{% if v.pincode %} · {{ v.pincode }}{% endif %}</p>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ALL Tiles Available Here -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <iconify-icon icon="lucide:check-circle-2" class="text-emerald-500"></iconify-icon>
+                    All Tiles Available in {{ village.name|default:city.name }}
+                </h2>
+                <span class="text-sm text-slate-400">{{ tiles.count }} products</span>
+            </div>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {% for tile in tiles %}
+                <a href="{% url 'tiles:tile_detail' slug=tile.slug %}" class="group bg-white rounded-2xl border border-slate-200/60 overflow-hidden hover:shadow-lg hover:shadow-blue-500/5 transition-all">
+                    <div class="aspect-[4/3] bg-slate-100 overflow-hidden relative">
+                       {% if tile.image %}
+<img src="{{ tile.image.url }}" alt="{{ tile.name }}" class="w-full h-full object-cover">
+{% else %}
+<div class="w-full h-full flex flex-col items-center justify-center text-slate-300">
+    <iconify-icon icon="lucide:image" class="text-5xl mb-2"></iconify-icon>
+    <span class="text-xs font-medium uppercase tracking-wider">No design yet</span>
+</div>
+{% endif %}
+                        <span class="absolute top-2 left-2 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full {% if tile.category.tile_type == 'floor' %}bg-slate-900 text-white{% elif tile.category.tile_type == 'wall' %}bg-brand-600 text-white{% elif tile.category.tile_type == 'special' %}bg-amber-600 text-white{% else %}bg-emerald-600 text-white{% endif %}">{{ tile.category.get_tile_type_display }}</span>
+                        <span class="absolute top-2 right-2 text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-white">Available</span>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="text-xs font-semibold text-slate-900 group-hover:text-brand-600 transition-colors line-clamp-2 leading-tight">{{ tile.name }}</h3>
+                        <div class="flex items-center gap-1 mt-2 flex-wrap">
+                            {% for eff in tile.effects.all|slice:":2" %}
+                            <span class="text-[9px] text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded">{{ eff.name }}</span>
+                            {% endfor %}
+                        </div>
+                        <p class="text-xs font-bold text-brand-600 mt-2">{{ tile.price_display }}</p>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

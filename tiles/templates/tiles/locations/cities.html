@@ -1,0 +1,72 @@
+{% extends 'tiles/base.html' %}
+{% block title %}{{ state.name }} Cities{% endblock %}
+
+{% block content %}
+<section class="pt-28 pb-24 bg-slate-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {% include 'tiles/components/breadcrumb.html' %}
+
+        <div class="mb-10">
+            <h1 class="text-3xl lg:text-4xl font-bold tracking-tight text-slate-900">{{ state.name }}</h1>
+            <p class="text-base text-slate-500 mt-2">{{ state.country.flag_emoji }} {{ state.country.name }} · {{ state.state_type }} · {{ cities|length }} cities · All tiles available</p>
+            {% if state.description %}
+            <p class="text-sm text-slate-600 mt-3 max-w-3xl">{{ state.description }}</p>
+            {% endif %}
+        </div>
+
+        <h2 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+            <iconify-icon icon="lucide:building-2" class="text-brand-600"></iconify-icon>
+            All Cities
+        </h2>
+
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-16">
+            {% for city in cities %}
+            <a href="{% url 'tiles:villages' country_slug=country.slug state_slug=state.slug city_slug=city.slug %}" class="group bg-white rounded-2xl border border-slate-200/60 hover:border-brand-300 hover:shadow-xl hover:shadow-blue-500/5 p-5 transition-all duration-300">
+                <div class="flex items-start justify-between mb-2">
+                    <h3 class="text-base font-semibold text-slate-900 group-hover:text-brand-600 transition-colors">{{ city.name }}</h3>
+                    {% if city.is_tile_hub %}
+                    <iconify-icon icon="lucide:factory" class="text-amber-500 text-lg flex-shrink-0"></iconify-icon>
+                    {% endif %}
+                </div>
+                <p class="text-xs text-slate-400 mb-3">{{ city.city_type }}</p>
+                <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+                    <span class="text-xs font-medium text-slate-500">{{ city.annotated_village_count }} areas</span>
+                    <iconify-icon icon="lucide:arrow-right" class="text-sm text-slate-300 group-hover:text-brand-500 group-hover:translate-x-1 transition-all"></iconify-icon>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- Tiles -->
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <iconify-icon icon="lucide:layers" class="text-brand-600"></iconify-icon>
+                Tiles Available in {{ state.name }}
+            </h2>
+            <a href="{% url 'tiles:tile_catalog' %}?country={{ country.slug }}" class="text-sm font-medium text-brand-600 hover:text-brand-700 flex items-center gap-1">
+                View all <iconify-icon icon="lucide:arrow-right"></iconify-icon>
+            </a>
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {% for tile in tiles %}
+            <a href="{% url 'tiles:tile_detail' slug=tile.slug %}" class="group bg-white rounded-2xl border border-slate-200/60 overflow-hidden hover:shadow-lg hover:shadow-blue-500/5 transition-all">
+                <div class="aspect-[4/3] bg-slate-100 overflow-hidden">
+                    {% if tile.image %}
+<img src="{{ tile.image.url }}" alt="{{ tile.name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy">
+{% else %}
+<div class="w-full h-full flex flex-col items-center justify-center text-slate-300">
+    <iconify-icon icon="lucide:image" class="text-3xl mb-1"></iconify-icon>
+    <span class="text-[9px] font-medium uppercase tracking-wider">No design yet</span>
+</div>
+{% endif %}
+                </div>
+                <div class="p-4">
+                    <h3 class="text-xs font-semibold text-slate-900 group-hover:text-brand-600 transition-colors line-clamp-2">{{ tile.name }}</h3>
+                    <p class="text-xs font-bold text-brand-600 mt-2">{{ tile.price_display }}</p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

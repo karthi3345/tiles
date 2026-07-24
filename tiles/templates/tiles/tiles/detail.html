@@ -1,0 +1,162 @@
+{% extends 'tiles/base.html' %}
+{% block title %}{{ tile.name }}{% endblock %}
+
+{% block content %}
+<section class="pt-28 pb-24 bg-slate-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {% include 'tiles/components/breadcrumb.html' %}
+
+        <div class="grid lg:grid-cols-2 gap-10 mb-16">
+            <!-- Image -->
+            <div class="bg-white rounded-2xl border border-slate-200/60 overflow-hidden">
+               <div class="aspect-square bg-slate-100">
+                 
+    {% if tile.image %}
+        <img src="{{ tile.image.url }}"
+             alt="{{ tile.name }}"
+             class="w-full h-full object-cover"
+             loading="lazy">
+             <p>{{ tile.image }}</p>
+                 <p>{{ tile.image.url }}</p>
+    {% else %}
+        <div class="w-full h-full flex flex-col items-center justify-center text-slate-400">
+            <iconify-icon icon="lucide:image" class="text-6xl mb-3"></iconify-icon>
+            <p class="text-sm">No image available</p>
+        </div>
+    {% endif %}
+</div>
+
+</div>
+
+            <!-- Info -->
+            <div>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-brand-600">{{ tile.category.name }}</span>
+                <h1 class="text-2xl lg:text-3xl font-bold text-slate-900 mt-2 mb-4">{{ tile.name }}</h1>
+
+                <div class="text-2xl font-bold text-brand-600 mb-6">{{ tile.price_display }}</div>
+
+                <div class="space-y-4 mb-8">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm text-slate-400 w-32">Material</span>
+                        <span class="text-sm font-medium text-slate-900">{{ tile.material }}</span>
+                    </div>
+                    {% if tile.water_absorption %}
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm text-slate-400 w-32">Water Absorption</span>
+                        <span class="text-sm font-medium text-slate-900">{{ tile.water_absorption }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm text-slate-400 w-32">Type</span>
+                        <span class="text-sm font-medium text-slate-900">{{ tile.category.get_tile_type_display }}</span>
+                    </div>
+                </div>
+
+                <!-- Effects -->
+                {% if tile.effects.exists %}
+                <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-slate-900 mb-2">Effects</h3>
+                    <div class="flex flex-wrap gap-2">
+                        {% for eff in tile.effects.all %}
+                        <span class="text-xs font-medium px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">{{ eff.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Finishes -->
+                {% if tile.finishes.exists %}
+                <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-slate-900 mb-2">Finishes</h3>
+                    <div class="flex flex-wrap gap-2">
+                        {% for fin in tile.finishes.all %}
+                        <span class="text-xs font-medium px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">{{ fin.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Sizes -->
+                {% if tile.sizes.exists %}
+                <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-slate-900 mb-2">Available Sizes</h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {% for size in tile.sizes.all %}
+                        <div class="text-xs font-medium px-3 py-2 rounded-lg bg-slate-50 border border-slate-100 text-center">
+                            {{ size.size_label }}
+                            <span class="block text-[10px] text-slate-400">{{ size.thickness_mm }}mm thick</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Features -->
+                {% if tile.features %}
+                <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-slate-900 mb-2">Features</h3>
+                    <ul class="space-y-1.5">
+                        {% for f in tile.features %}
+                        <li class="flex items-start gap-2 text-sm text-slate-600">
+                            <iconify-icon icon="lucide:check" class="text-emerald-500 mt-0.5 flex-shrink-0"></iconify-icon>
+                            {{ f }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- Applications -->
+                {% if tile.applications %}
+                <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-slate-900 mb-2">Applications</h3>
+                    <div class="flex flex-wrap gap-2">
+                        {% for a in tile.applications %}
+                        <span class="text-xs px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">{{ a }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Available Countries -->
+                <div>
+                    <h3 class="text-sm font-semibold text-slate-900 mb-2">Available in All Locations of</h3>
+                    <div class="flex flex-wrap gap-2">
+                        {% for c in tile.countries.all %}
+                        <a href="{% url 'tiles:states' country_slug=c.slug %}" class="text-xs font-medium px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-brand-300 hover:bg-blue-50 transition-colors">
+                            {{ c.flag_emoji }} {{ c.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Related Tiles -->
+        {% if related %}
+        <div>
+            <h2 class="text-xl font-bold text-slate-900 mb-6">Related Tiles</h2>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {% for rtile in related %}
+                <a href="{% url 'tiles:tile_detail' slug=rtile.slug %}" class="group bg-white rounded-2xl border border-slate-200/60 overflow-hidden hover:shadow-lg hover:shadow-blue-500/5 transition-all">
+                    <div class="aspect-[4/3] bg-slate-100 overflow-hidden">
+                       {% if rtile.image %}
+<img src="{{ rtile.image.url }}" alt="{{ rtile.name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy">
+{% else %}
+<div class="w-full h-full flex flex-col items-center justify-center text-slate-300">
+    <iconify-icon icon="lucide:image" class="text-3xl mb-1"></iconify-icon>
+    <span class="text-[9px] font-medium uppercase tracking-wider">No design yet</span>
+</div>
+{% endif %}
+                    <div class="p-4">
+                        <h3 class="text-xs font-semibold text-slate-900 group-hover:text-brand-600 transition-colors line-clamp-2">{{ rtile.name }}</h3>
+                        <p class="text-xs font-bold text-brand-600 mt-2">{{ rtile.price_display }}</p>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

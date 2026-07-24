@@ -1,0 +1,11 @@
+<nav class="flex items-center flex-wrap gap-1.5 text-xs sm:text-sm text-slate-400 mb-6" aria-label="Breadcrumb">
+    <a href="{% url 'tiles:home' %}" class="hover:text-brand-600 transition-colors">Home</a>
+    {% for label, url in breadcrumbs %}
+    <iconify-icon icon="lucide:chevron-right" class="text-[10px] text-slate-300"></iconify-icon>
+    {% if url %}
+    <a href="{{ url }}" class="hover:text-brand-600 transition-colors">{{ label }}</a>
+    {% else %}
+    <span class="text-slate-700 font-medium">{{ label }}</span>
+    {% endif %}
+    {% endfor %}
+</nav>

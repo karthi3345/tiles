@@ -1,0 +1,79 @@
+{% extends 'tiles/base.html' %}
+{% block title %}Tile Catalog{% endblock %}
+
+{% block content %}
+<section class="pt-28 pb-24 bg-slate-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {% include 'tiles/components/breadcrumb.html' %}
+
+        <div class="mb-8">
+            <h1 class="text-3xl lg:text-4xl font-bold tracking-tight text-slate-900">Tile Catalog</h1>
+            <p class="text-base text-slate-500 mt-2">{{ total }} tiles available · Filter by category, type, country, or search</p>
+        </div>
+
+        <!-- Filters -->
+        <form method="get" class="bg-white rounded-2xl border border-slate-200/60 p-5 mb-8">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <div class="lg:col-span-2">{{ form.query }}</div>
+                <div>{{ form.category }}</div>
+                <div>{{ form.tile_type }}</div>
+                <div>{{ form.country }}</div>
+            </div>
+            <div class="flex items-center gap-3 mt-3">
+                <button type="submit" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl transition-colors flex items-center gap-2">
+                    <iconify-icon icon="lucide:search" class="text-sm"></iconify-icon> Search
+                </button>
+                <a href="{% url 'tiles:tile_catalog' %}" class="text-sm text-slate-500 hover:text-brand-600 transition-colors">Clear filters</a>
+                {% if query or request.GET.category or request.GET.tile_type or request.GET.country %}
+                <span class="text-sm text-slate-400 ml-auto">{{ total }} results</span>
+                {% endif %}
+            </div>
+        </form>
+
+        <!-- Tiles Grid -->
+        {% if tiles %}
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {% for tile in tiles %}
+            <a href="{% url 'tiles:tile_detail' slug=tile.slug %}" class="group bg-white rounded-2xl border border-slate-200/60 overflow-hidden hover:border-brand-200 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300">
+                <div class="aspect-[4/3] bg-slate-100 relative overflow-hidden">
+                    {% if tile.image %}
+                    <img src="{{ tile.image.url }}" alt="{{ tile.name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy">
+                    {% else %}
+                    <div class="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                        <iconify-icon icon="lucide:image" class="text-4xl mb-2"></iconify-icon>
+                        <span class="text-[10px] font-medium uppercase tracking-wider">No design yet</span>
+                    </div>
+                    {% endif %}
+                    <div class="absolute top-2 left-2 flex flex-wrap gap-1">
+                        <span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full {% if tile.category.tile_type == 'floor' %}bg-slate-900 text-white{% elif tile.category.tile_type == 'wall' %}bg-brand-600 text-white{% elif tile.category.tile_type == 'special' %}bg-amber-600 text-white{% else %}bg-emerald-600 text-white{% endif %}">{{ tile.category.get_tile_type_display }}</span>
+                        {% if tile.is_featured %}
+                        <span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500 text-white">Featured</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="p-5">
+                    <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">{{ tile.category.name }}</p>
+                    <h3 class="text-sm font-semibold text-slate-900 group-hover:text-brand-600 transition-colors line-clamp-2 leading-tight mb-2">{{ tile.name }}</h3>
+                    <div class="flex flex-wrap gap-1 mb-3">
+                        {% for eff in tile.effects.all|slice:":3" %}
+                        <span class="text-[9px] text-slate-500 bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded">{{ eff.name }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+                        <span class="text-sm font-bold text-brand-600">{{ tile.price_display }}</span>
+                        <span class="text-[10px] text-slate-400">{{ tile.material }}</span>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white rounded-2xl border border-slate-200/60 p-16 text-center">
+            <iconify-icon icon="lucide:search-x" class="text-5xl text-slate-200 mb-4"></iconify-icon>
+            <h3 class="text-lg font-semibold text-slate-400 mb-2">No tiles found</h3>
+            <p class="text-sm text-slate-400">Try adjusting your search or filters.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

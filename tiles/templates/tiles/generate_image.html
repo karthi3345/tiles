@@ -1,0 +1,100 @@
+{% extends 'tiles/base.html' %}
+{% block title %}Generate Tile Image{% endblock %}
+
+{% block content %}
+<section class="pt-28 pb-24 bg-slate-50 min-h-screen">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold mb-4">
+                <iconify-icon icon="lucide:image" class="text-sm"></iconify-icon> Stable Diffusion XL · Cloudflare Workers AI
+            </span>
+            <h1 class="text-3xl lg:text-5xl font-bold tracking-tight text-slate-900">Tile Design Generator</h1>
+            <p class="mt-4 text-lg text-slate-500 max-w-2xl mx-auto">Describe a tile design and AI generates a PNG image.</p>
+        </div>
+
+        {% if messages %}
+        <div class="max-w-2xl mx-auto mb-8 space-y-3">
+            {% for message in messages %}
+            <div class="px-5 py-3 rounded-xl text-sm font-medium {% if message.tags == 'success' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% endif %}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="grid lg:grid-cols-5 gap-8">
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-2xl border border-slate-200/60 p-6 lg:sticky lg:top-28">
+                    <h2 class="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2">
+                        <iconify-icon icon="lucide:settings-2" class="text-brand-600"></iconify-icon> Settings
+                    </h2>
+                    <form method="post" id="gen-form">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Tile Description</label>
+                            {{ form.prompt }}
+                        </div>
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Style</label>
+                            {{ form.style }}
+                        </div>
+                        <button type="submit" id="gen-btn" class="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                            <iconify-icon icon="lucide:sparkles" class="text-lg"></iconify-icon> Generate Tile Image
+                        </button>
+                    </form>
+                    <div class="mt-6 pt-6 border-t border-slate-100">
+                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">Quick Prompts</p>
+                        <div class="space-y-2">
+                            <button class="quick-prompt w-full text-left text-xs px-3 py-2 rounded-lg bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-brand-600 transition-colors" data-prompt="White marble effect porcelain floor tile with grey veins, glossy finish, 600x600mm">White marble porcelain tile</button>
+                            <button class="quick-prompt w-full text-left text-xs px-3 py-2 rounded-lg bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-brand-600 transition-colors" data-prompt="Dark wood grain porcelain plank tile, matte finish, warm brown tones, 200x1200mm">Dark wood grain plank</button>
+                            <button class="quick-prompt w-full text-left text-xs px-3 py-2 rounded-lg bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-brand-600 transition-colors" data-prompt="Blue geometric pattern ceramic wall tile, Spanish style, glossy finish, hexagonal shape">Blue geometric wall tile</button>
+                            <button class="quick-prompt w-full text-left text-xs px-3 py-2 rounded-lg bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-brand-600 transition-colors" data-prompt="Concrete effect large format porcelain slab, light grey, textured matte surface, 1200x2400mm">Concrete large format slab</button>
+                            <button class="quick-prompt w-full text-left text-xs px-3 py-2 rounded-lg bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-brand-600 transition-colors" data-prompt="Terracotta handmade look ceramic tile, warm rust color, rustic textured surface, 200x200mm">Terracotta rustic tile</button>
+                            <button class="quick-prompt w-full text-left text-xs px-3 py-2 rounded-lg bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-brand-600 transition-colors" data-prompt="Black and white hexagonal mosaic tile, Victorian style, glossy ceramic, 300x300mm sheet">Black & white hex mosaic</button>
+                            <button class="quick-prompt w-full text-left text-xs px-3 py-2 rounded-lg bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-brand-600 transition-colors" data-prompt="Indian double charged vitrified tile, ivory marble pattern, polished finish, 800x800mm">Indian DCV tile ivory</button>
+                            <button class="quick-prompt w-full text-left text-xs px-3 py-2 rounded-lg bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-brand-600 transition-colors" data-prompt="Turkish cement look tile, grey and white pattern, handmade appearance, matte finish, 200x200mm">Turkish cement tile</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-3">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-semibold text-slate-900">Generated Images</h2>
+                    <span class="text-sm text-slate-400">{{ generated_images|length }} images</span>
+                </div>
+                {% if generated_images %}
+                <div class="grid sm:grid-cols-2 gap-4">
+                    {% for img in generated_images %}
+                    <div class="bg-white rounded-2xl border border-slate-200/60 overflow-hidden hover:shadow-lg hover:shadow-blue-500/5 transition-all group">
+                        <div class="aspect-square bg-slate-100 relative overflow-hidden">
+                            <img src="{{ img.image.url }}" alt="{{ img.prompt }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                            <a href="{{ img.image.url }}" download class="absolute top-3 right-3 w-9 h-9 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center text-slate-600 hover:text-brand-600 opacity-0 group-hover:opacity-100 transition-all shadow-sm">
+                                <iconify-icon icon="lucide:download" class="text-base"></iconify-icon>
+                            </a>
+                        </div>
+                        <div class="p-4">
+                            <p class="text-xs text-slate-500 line-clamp-2">{{ img.prompt }}</p>
+                            <p class="text-[10px] text-slate-400 mt-2">{{ img.created_at|date:"M d, Y H:i" }} · PNG</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="bg-white rounded-2xl border border-slate-200/60 p-16 text-center">
+                    <iconify-icon icon="lucide:image" class="text-5xl text-slate-200 mb-4"></iconify-icon>
+                    <h3 class="text-lg font-semibold text-slate-400 mb-2">No images yet</h3>
+                    <p class="text-sm text-slate-400 max-w-sm mx-auto">Describe a tile design and click generate to create your first image.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.querySelectorAll('.quick-prompt').forEach(b=>{b.addEventListener('click',function(){document.getElementById('id_prompt').value=this.dataset.prompt})});
+const f=document.getElementById('gen-form'),b=document.getElementById('gen-btn');
+f.addEventListener('submit',function(){b.disabled=true;b.innerHTML='<iconify-icon icon="lucide:loader-2" class="text-lg animate-spin"></iconify-icon> Generating... (30-60s)'});
+</script>
+{% endblock %}
