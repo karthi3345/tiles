@@ -4,7 +4,7 @@ import time
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_exempt  # <-- NEW: AI Chat-ku thevai
+from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q, Count
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -48,12 +48,19 @@ def _build_tile_prompt(tile):
         parts.append(tile.category.name.lower())
     return ' '.join(parts)
 
+
 def upload_to_cloudinary(image_file):
+    print("UPLOAD FILE:", image_file)
+    print("FILE NAME:", image_file.name if hasattr(image_file, 'name') else 'In-Memory File')
+
     result = cloudinary.uploader.upload(
         image_file,
         folder="tiles/generated",
         resource_type="image"
     )
+
+    print("CLOUDINARY RESULT:")
+    print(result)
 
     return result["secure_url"]
 
@@ -133,35 +140,13 @@ def villages_list(request, country_slug, state_slug, city_slug):
 
 
 def village_tiles(request, country_slug, state_slug, city_slug, village_slug):
-
-    country = get_object_or_404(
-        Country,
-        slug=country_slug
-    )
-
-    state = get_object_or_404(
-        State,
-        slug=state_slug,
-        country=country
-    )
-
-    city = get_object_or_404(
-        City,
-        slug=city_slug,
-        state=state
-    )
-
-    village = get_object_or_404(
-        Village,
-        slug=village_slug,
-        city=city
-    )
+    country = get_object_or_404(Country, slug=country_slug)
+    state = get_object_or_404(State, slug=state_slug, country=country)
+    city = get_object_or_404(City, slug=city_slug, state=state)
+    village = get_object_or_404(Village, slug=village_slug, city=city)
 
     tiles = _get_tiles_for_country(country)
-
-    showrooms = village.showrooms.filter(
-        is_active=True
-    )
+    showrooms = village.showrooms.filter(is_active=True)
 
     breadcrumbs = _build_breadcrumbs([
         ('All Countries', '/locations/'),
@@ -185,6 +170,8 @@ def village_tiles(request, country_slug, state_slug, city_slug, village_slug):
             'breadcrumbs': breadcrumbs,
         }
     )
+
+
 # ─────────── TILE CATALOG ───────────
 
 def tile_catalog(request):
@@ -243,30 +230,23 @@ def generate_single_tile_image(request, slug):
     result = image_gen_service.generate(prompt)
 
     if result['success'] and result['image_file']:
+        # Upload to Cloudinary and get the URL
+        image_url = upload_to_cloudinary(result['image_file'])
 
-        image_url = upload_to_cloudinary(
-        result['image_file']
-    )
+        # Save the Cloudinary URL to the database
+        tile.image = image_url
+        tile.save(update_fields=['image'])
 
-        if tile.image:
-           tile.image.delete(save=False)
-
-           tile.image = image_url
-           tile.save(update_fields=['image'])
-
-           messages.success(
-           request,
-          f'Design generated for {tile.name}!'
-    )
-
+        messages.success(request, f'Design generated for {tile.name}!')
     else:
-       messages.error(
-        request,
-        result.get(
-            'error',
-            'Generation failed. Check Cloudflare credentials.'
+        messages.error(
+            request,
+            result.get('error', 'Generation failed. Check Cloudflare credentials.')
         )
-    )
+
+    # CRITICAL: Must redirect back to the page at the end
+    return redirect('tiles:tile_detail', slug=slug)
+
 
 @login_required
 def generate_all_tile_images(request):
@@ -296,10 +276,13 @@ def generate_all_tile_images(request):
         for tile in products:
             prompt = _build_tile_prompt(tile)
             result = image_gen_service.generate(prompt)
+            
             if result['success'] and result['image_file']:
-                if tile.image:
-                    tile.image.delete(save=False)
-                tile.image = result['image_file']
+                # Upload to Cloudinary instead of saving locally
+                image_url = upload_to_cloudinary(result['image_file'])
+                
+                # Save the URL
+                tile.image = image_url
                 tile.save(update_fields=['image'])
                 generated += 1
             else:
@@ -331,7 +314,7 @@ def generate_all_tile_images(request):
 
 # ─────────── AI CHAT ───────────
 
-@csrf_exempt  # <-- NEW: Javascript ninnu POST request anuppum pothu 403 Forbidden Error varathu mathiri
+@csrf_exempt
 def chat_view(request):
     if request.method == 'POST':
         try:
@@ -346,7 +329,6 @@ def chat_view(request):
         if not message:
             return JsonResponse({'error': 'Message is required'}, status=400)
 
-        # Session lookup / creation (single clean path, no dead duplicate branch)
         if not session_id:
             session_id = str(uuid.uuid4())
             session = ChatSession.objects.create(session_id=session_id, title=message[:100])
@@ -358,15 +340,12 @@ def chat_view(request):
 
         ChatMessage.objects.create(session=session, role='user', content=message)
 
-        # NOTE: renamed from `messages` -> `chat_history_qs` to avoid shadowing
-        # the `django.contrib.messages` module imported at the top of this file.
         chat_history_qs = list(session.messages.all()[:11])
         history = [
             {"role": m.role, "content": m.content}
             for m in chat_history_qs[:-1]
         ]
 
-        # Ithu than Mistral AI service-ah call pannum
         result = chat_service.chat(message, history)
         print("=" * 60)
         print("CHAT RESULT")
@@ -405,27 +384,42 @@ def chat_view(request):
 
 def generate_image_view(request):
     images = GeneratedImage.objects.all()[:12]
+    form = ImageGenerateForm(request.POST or None)
+
     if request.method == 'POST':
-        form = ImageGenerateForm(request.POST)
         if form.is_valid():
-            prompt = form.cleaned_data['prompt']
+            prompt = form.cleaned_data.get('prompt')
             style = form.cleaned_data.get('style', 'realistic')
+
             result = image_gen_service.generate(prompt, style)
-            if result['success'] and result['image_file']:
+
+            if result['success'] and result.get('image_file'):
+                # Upload to Cloudinary
+                image_url = upload_to_cloudinary(result['image_file'])
+
+                # Save URL to database
                 GeneratedImage.objects.create(
                     prompt=f"[{style}] {prompt}",
-                    image=result['image_file'],
+                    image=image_url,
                     model_used=image_gen_service.model,
                 )
+
                 messages.success(request, 'Tile design generated successfully!')
                 return redirect('tiles:generate_image')
-            messages.error(request, result.get('error', 'Generation failed. Check Cloudflare credentials.'))
-    else:
-        form = ImageGenerateForm()
+            else:
+                messages.error(request, result.get('error', 'Generation failed'))
+
     breadcrumbs = _build_breadcrumbs([('Generate Image', None)])
-    return render(request, 'tiles/generate_image.html', {
-        'form': form, 'generated_images': images, 'breadcrumbs': breadcrumbs,
-    })
+
+    return render(
+        request,
+        'tiles/generate_image.html',
+        {
+            'form': form,
+            'generated_images': images,
+            'breadcrumbs': breadcrumbs,
+        }
+    )
 
 
 # ─────────── LOCATION SEARCH API ───────────
@@ -445,7 +439,7 @@ def location_search(request):
         results.append({
             'type': 'city', 'name': c.name,
             'path': f"/locations/{c.country.slug}/{c.state.slug}/{c.slug}/",
-            'parent': f"{c.state.name}, {c.country.flag_emoji} {c.country.name}"  # Fixed: use c.country, not v.country
+            'parent': f"{c.state.name}, {c.country.flag_emoji} {c.country.name}"
         })
     for s in State.objects.filter(name__icontains=q)[:5]:
         results.append({
