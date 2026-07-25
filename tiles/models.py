@@ -15,7 +15,7 @@ class Country(models.Model):
     is_top_producer = models.BooleanField(default=False)
     is_top_consumer = models.BooleanField(default=False)
     ranking = models.PositiveIntegerField(default=0)
-    image = models.ImageField(upload_to='countries/', blank=True, null=True)
+    image = models.URLField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -239,11 +239,10 @@ class TileProduct(models.Model):
         default=0
     )
 
-    image = models.ImageField(
-        upload_to='tiles/',
-        blank=True,
-        null=True
-    )
+    image = models.URLField(
+    blank=True,
+    null=True
+)
 
     is_featured = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -323,7 +322,10 @@ class ChatMessage(models.Model):
 
 class GeneratedImage(models.Model):
     prompt = models.TextField()
-    image = models.ImageField(upload_to='generated/')
+    image = models.URLField(
+    blank=True,
+    null=True
+)
     model_used = models.CharField(max_length=200, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

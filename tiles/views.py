@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_exempt  # <-- NEW: AI Chat-ku thev
 from django.db.models import Q, Count
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+import cloudinary.uploader
 
 from .models import (
     Country, State, City, Village,
@@ -46,6 +47,15 @@ def _build_tile_prompt(tile):
     if tile.category:
         parts.append(tile.category.name.lower())
     return ' '.join(parts)
+
+def upload_to_cloudinary(image_file):
+    result = cloudinary.uploader.upload(
+        image_file,
+        folder="tiles/generated",
+        resource_type="image"
+    )
+
+    return result["secure_url"]
 
 
 # ─────────── HOME ───────────
@@ -233,16 +243,30 @@ def generate_single_tile_image(request, slug):
     result = image_gen_service.generate(prompt)
 
     if result['success'] and result['image_file']:
+
+        image_url = upload_to_cloudinary(
+        result['image_file']
+    )
+
         if tile.image:
-            tile.image.delete(save=False)
-        tile.image = result['image_file']
-        tile.save(update_fields=['image'])
-        messages.success(request, f'Design generated for {tile.name}!')
+           tile.image.delete(save=False)
+
+           tile.image = image_url
+           tile.save(update_fields=['image'])
+
+           messages.success(
+           request,
+          f'Design generated for {tile.name}!'
+    )
+
     else:
-        messages.error(request, result.get('error', 'Generation failed. Check Cloudflare credentials.'))
-
-    return redirect('tiles:tile_detail', slug=slug)
-
+       messages.error(
+        request,
+        result.get(
+            'error',
+            'Generation failed. Check Cloudflare credentials.'
+        )
+    )
 
 @login_required
 def generate_all_tile_images(request):

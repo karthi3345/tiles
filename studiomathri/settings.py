@@ -25,6 +25,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'tiles',
+    "cloudinary",
+    "cloudinary_storage",
+
 ]
 
 MIDDLEWARE = [
@@ -85,3 +88,11 @@ CF_BASE_URL = f'https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/ai
 WSGI_APPLICATION = 'studiomathri.wsgi.application'
 
 ASGI_APPLICATION = 'studiomathri.asgi.application'
+
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": os.getenv("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": os.getenv("CLOUDINARY_API_KEY"),
+    "API_SECRET": os.getenv("CLOUDINARY_API_SECRET"),
+}
+
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
