@@ -7,9 +7,7 @@ load_dotenv()
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-studio-mathri-change-me-xyz')
-
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
-
 
 ALLOWED_HOSTS = [
     "tiles-8o5p.vercel.app",
@@ -26,13 +24,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'tiles',
-    "cloudinary",
-    "cloudinary_storage",
-
+    "cloudinary",  # KEEP THIS - we need it for cloudinary.uploader
+    # "cloudinary_storage",  <--- REMOVED: You don't need this anymore!
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # <--- ADDED: Required for Vercel static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -42,7 +40,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'studiomathri.urls'
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -71,14 +69,14 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'tiles', 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Cloudflare AI Settings
 CF_ACCOUNT_ID = os.getenv('CF_ACCOUNT_ID', '')
 CF_API_TOKEN = os.getenv('CF_API_TOKEN', '')
 CF_CHAT_MODEL = "@cf/google/gemma-4-26b-a4b-it"
@@ -86,21 +84,13 @@ CF_IMAGE_MODEL = "@cf/stabilityai/stable-diffusion-xl-base-1.0"
 CF_BASE_URL = f'https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/ai/run'
 
 WSGI_APPLICATION = 'studiomathri.wsgi.application'
-
 ASGI_APPLICATION = 'studiomathri.asgi.application'
 
-
+# Cloudinary Configuration (For manual uploads in views.py)
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
     api_secret=os.getenv("CLOUDINARY_API_SECRET")
 )
 
-STORAGES = {
-    "default": {
-        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
-}
+# REMOVED THE STORAGES DICTIONARY - Not needed since you use URLField now!
