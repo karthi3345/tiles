@@ -62,29 +62,86 @@
                     <span class="text-sm text-slate-400">{{ generated_images|length }} images</span>
                 </div>
                 {% if generated_images %}
-                <div class="grid sm:grid-cols-2 gap-4">
-                    {% for img in generated_images %}
-                    <div class="bg-white rounded-2xl border border-slate-200/60 overflow-hidden hover:shadow-lg hover:shadow-blue-500/5 transition-all group">
-                        <div class="aspect-square bg-slate-100 relative overflow-hidden">
-                            <img src="{{ img.image.url }}" alt="{{ img.prompt }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
-                            <a href="{{ img.image.url }}" download class="absolute top-3 right-3 w-9 h-9 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center text-slate-600 hover:text-brand-600 opacity-0 group-hover:opacity-100 transition-all shadow-sm">
-                                <iconify-icon icon="lucide:download" class="text-base"></iconify-icon>
-                            </a>
-                        </div>
-                        <div class="p-4">
-                            <p class="text-xs text-slate-500 line-clamp-2">{{ img.prompt }}</p>
-                            <p class="text-[10px] text-slate-400 mt-2">{{ img.created_at|date:"M d, Y H:i" }} · PNG</p>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="bg-white rounded-2xl border border-slate-200/60 p-16 text-center">
-                    <iconify-icon icon="lucide:image" class="text-5xl text-slate-200 mb-4"></iconify-icon>
-                    <h3 class="text-lg font-semibold text-slate-400 mb-2">No images yet</h3>
-                    <p class="text-sm text-slate-400 max-w-sm mx-auto">Describe a tile design and click generate to create your first image.</p>
-                </div>
-                {% endif %}
+
+<div class="grid sm:grid-cols-2 gap-4">
+
+{% for img in generated_images %}
+
+<div class="bg-white rounded-2xl border border-slate-200/60 overflow-hidden hover:shadow-lg hover:shadow-blue-500/5 transition-all group">
+
+    <div class="aspect-square bg-slate-100 relative overflow-hidden">
+
+        {% if img.image %}
+
+        <img 
+            src="{{ img.image }}"
+            alt="{{ img.prompt }}"
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+        >
+
+        <a 
+            href="{{ img.image }}"
+            target="_blank"
+            class="absolute top-3 right-3 w-9 h-9 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center text-slate-600 hover:text-brand-600 opacity-0 group-hover:opacity-100 transition-all shadow-sm"
+        >
+            <iconify-icon 
+                icon="lucide:external-link"
+                class="text-base">
+            </iconify-icon>
+        </a>
+
+        {% else %}
+
+        <div class="flex items-center justify-center h-full text-slate-400">
+            No Image
+        </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <div class="p-4">
+
+        <p class="text-xs text-slate-500 line-clamp-2">
+            {{ img.prompt }}
+        </p>
+
+
+        <p class="text-[10px] text-slate-400 mt-2">
+            {{ img.created_at|date:"M d, Y H:i" }} · PNG
+        </p>
+
+    </div>
+
+
+</div>
+
+{% endfor %}
+
+</div>
+
+
+{% else %}
+
+<div class="bg-white rounded-2xl border border-slate-200/60 p-16 text-center">
+
+    <iconify-icon 
+        icon="lucide:image"
+        class="text-5xl text-slate-200 mb-4">
+    </iconify-icon>
+
+    <h3 class="text-lg font-semibold text-slate-400 mb-2">
+        No images yet
+    </h3>
+
+    <p class="text-sm text-slate-400 max-w-sm mx-auto">
+        Describe a tile design and click generate to create your first image.
+    </p>
+
+</div>
+
+{% endif %}
             </div>
         </div>
     </div>
