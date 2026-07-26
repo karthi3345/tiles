@@ -42,12 +42,21 @@
             <div>
                 <h4 class="text-sm font-semibold text-white uppercase tracking-wider mb-4">AI Tools</h4>
                 <ul class="space-y-2.5 text-sm">
-                    <li><a href="{% url 'tiles:chat' %}" class="hover:text-white transition-colors flex items-center gap-2">
-                        <iconify-icon icon="lucide:message-circle" class="text-base"></iconify-icon> AI Chat Assistant
-                    </a></li>
-                    <li><a href="{% url 'tiles:generate_image' %}" class="hover:text-white transition-colors flex items-center gap-2">
-                        <iconify-icon icon="lucide:image" class="text-base"></iconify-icon> Tile Image Generator
-                    </a></li>
+                    {% if user.is_authenticated %}
+                <li><a href="{% url 'tiles:chat' %}" class="hover:text-white transition-colors flex items-center gap-2">
+                    <iconify-icon icon="lucide:message-circle" class="text-base"></iconify-icon> AI Chat Assistant
+                </a></li>
+                <li><a href="{% url 'tiles:generate_image' %}" class="hover:text-white transition-colors flex items-center gap-2">
+                    <iconify-icon icon="lucide:image" class="text-base"></iconify-icon> Tile Image Generator
+                </a></li>
+                {% else %}
+                <li><a href="{% url 'accounts:login' %}?next={% url 'tiles:chat' %}" class="hover:text-white transition-colors flex items-center gap-2">
+                    <iconify-icon icon="lucide:message-circle" class="text-base"></iconify-icon> AI Chat Assistant
+                </a></li>
+                <li><a href="{% url 'accounts:login' %}?next={% url 'tiles:generate_image' %}" class="hover:text-white transition-colors flex items-center gap-2">
+                    <iconify-icon icon="lucide:image" class="text-base"></iconify-icon> Tile Image Generator
+                </a></li>
+                {% endif %}
                 </ul>
             </div>
         </div>

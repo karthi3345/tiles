@@ -197,10 +197,38 @@ class Command(BaseCommand):
         fin_map = {f.name: f for f in TileFinish.objects.all()}
         size_map = {s.size_label: s for s in TileSize.objects.all()}
 
+        category_images = {
+            'Porcelain Floor Tiles': 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
+            'Marble Effect Tiles': 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80',
+            'Wood Look Tiles': 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80',
+            'Ceramic Floor Tiles': 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80',
+            'Vitrified Floor Tiles': 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?auto=format&fit=crop&w=800&q=80',
+            'Ceramic Wall Tiles': 'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=800&q=80',
+            'Porcelain Wall Tiles': 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80',
+            'Subway Tiles': 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80',
+            'Mosaic Tiles': 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=800&q=80',
+            'Natural Stone Tiles': 'https://images.unsplash.com/photo-1516455590571-18256e5bb9ff?auto=format&fit=crop&w=800&q=80',
+            'Large Format Slabs': 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80',
+            'Outdoor / Exterior Tiles': 'https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=800&q=80',
+            'Swimming Pool Tiles': 'https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?auto=format&fit=crop&w=800&q=80',
+            'Parking / Heavy Duty Tiles': 'https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=800&q=80',
+            'Anti-Slip Tiles': 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80',
+            'Kitchen Backsplash Tiles': 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=800&q=80',
+            'Bathroom Tiles': 'https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&w=800&q=80',
+            'Commercial Tiles': 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80',
+            'Terracotta / Rustic Tiles': 'https://images.unsplash.com/photo-1528740561666-dc2479dc08ab?auto=format&fit=crop&w=800&q=80',
+            '3D / Textured Wall Tiles': 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80',
+            'Metallic Effect Tiles': 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=800&q=80',
+            'Geometric Pattern Tiles': 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=800&q=80',
+            'Concrete Effect Tiles': 'https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=800&q=80',
+            'Glass Tiles': 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=800&q=80',
+        }
+
         for td in tiles_data:
             cat = cat_map.get(td['cat'])
             if not cat:
                 continue
+            img_url = category_images.get(td['cat'], 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80')
             product, created = TileProduct.objects.update_or_create(
                 name=td['name'],
                 defaults={
@@ -208,11 +236,9 @@ class Command(BaseCommand):
                     'category': cat,
                     'description': f"{td['material']} {td['cat'].lower()} with {', '.join(td['effects'][:2])} design.",
                     'material': td['material'],
-                    'water_absorption': td.get('water', ''),
                     'price_range_min': td['price_min'],
                     'price_range_max': td['price_max'],
-                    'features': td['features'],
-                    'applications': td['apps'],
+                    'image': img_url,
                     'is_featured': td['price_max'] > 50,
                 }
             )
@@ -659,28 +685,8 @@ class Command(BaseCommand):
         self.stdout.write(f'     Villages/Areas: {Village.objects.count()}')
 
     def _link_tiles_to_countries(self):
-
-         india = Country.objects.get(name="India")
-         italy = Country.objects.get(name="Italy")
-         china = Country.objects.get(name="China")
-         spain = Country.objects.get(name="Spain")
-
-         TileProduct.objects.filter(
-        name__icontains="Indian"
-    ).update()
-
-         for tile in TileProduct.objects.filter(name__icontains="Indian"):
-           tile.countries.set([india])
-
-         for tile in TileProduct.objects.filter(name__icontains="Italian"):
-            tile.countries.set([italy])
-
-         for tile in TileProduct.objects.filter(
-        material__icontains="Porcelain"
-    ):
-          tile.countries.add(china)
-
-         for tile in TileProduct.objects.filter(
-        effects__name__icontains="Concrete"
-    ).distinct():
-          tile.countries.add(spain)
+        countries = list(Country.objects.all())
+        all_tiles = list(TileProduct.objects.all())
+        for country in countries:
+            country.tile_products.set(all_tiles)
+        self.stdout.write(self.style.SUCCESS(f'    Linked all {len(all_tiles)} tiles to {len(countries)} countries.'))

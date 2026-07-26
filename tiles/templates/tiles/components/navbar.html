@@ -1,66 +1,362 @@
-<nav class="fixed top-0 left-0 right-0 z-50 h-20 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
-    <div class="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-        <!-- Logo -->
-        <a href="{% url 'tiles:home' %}" class="flex items-center gap-3 group flex-shrink-0">
-            <div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-                <iconify-icon icon="lucide:layout-grid" class="text-white text-xl"></iconify-icon>
-            </div>
-            <div class="hidden sm:block">
-                <span class="text-lg font-bold tracking-tight text-slate-900">Studio <span class="text-brand-600">Mathri</span></span>
-                <span class="block text-[10px] font-medium text-slate-400 uppercase tracking-widest -mt-1">Global Tile Marketplace</span>
-            </div>
-        </a>
+{% load static %}
 
-        <!-- Desktop Nav -->
-        <div class="hidden lg:flex items-center gap-1">
-            <a href="{% url 'tiles:home' %}" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-brand-600 rounded-lg hover:bg-blue-50 transition-all">Home</a>
-            <a href="{% url 'tiles:countries' %}" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-brand-600 rounded-lg hover:bg-blue-50 transition-all">Locations</a>
-            <a href="{% url 'tiles:tile_catalog' %}" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-brand-600 rounded-lg hover:bg-blue-50 transition-all">Tiles</a>
-            <a href="{% url 'tiles:chat' %}" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-brand-600 rounded-lg hover:bg-blue-50 transition-all">
-                <span class="flex items-center gap-1.5">
-                    AI Chat
-                    <span class="relative flex h-2 w-2">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                    </span>
-                </span>
-            </a>
-            <a href="{% url 'tiles:generate_image' %}" class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-brand-600 rounded-lg hover:bg-blue-50 transition-all">Generate</a>
-        </div>
+<nav class="fixed top-0 left-0 right-0 z-[9999] h-20 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
 
-        <!-- Location Search + CTA -->
-        <div class="flex items-center gap-3">
-            <div class="hidden md:flex items-center relative" id="nav-search-wrap">
-                <iconify-icon icon="lucide:search" class="absolute left-3 text-slate-400 text-sm pointer-events-none"></iconify-icon>
-                <input type="text" id="nav-search" placeholder="Search any location..." class="w-48 lg:w-56 rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-4 py-2 text-sm text-slate-900 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:bg-white transition-all">
-                <div id="nav-search-results" class="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 shadow-xl z-50 hidden max-h-80 overflow-y-auto"></div>
-            </div>
-            <a href="{% url 'tiles:chat' %}" class="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all">
-                <iconify-icon icon="lucide:sparkles" class="text-base"></iconify-icon>
-                Ask AI
-            </a>
-            <button id="mobile-menu-btn" class="lg:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors">
-                <iconify-icon icon="lucide:menu" class="text-xl text-slate-700" id="mobile-menu-icon"></iconify-icon>
-            </button>
-        </div>
-    </div>
+<div class="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
 
-    <!-- Mobile Menu -->
-    <div id="mobile-menu" class="lg:hidden hidden bg-white/95 backdrop-blur-xl border-b border-slate-200 shadow-xl">
-        <div class="px-4 py-3">
-            <div class="relative mb-3 md:hidden">
-                <iconify-icon icon="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></iconify-icon>
-                <input type="text" id="mobile-search" placeholder="Search any location..." class="w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
-                <div id="mobile-search-results" class="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-slate-200 shadow-xl z-50 hidden max-h-64 overflow-y-auto"></div>
-            </div>
-        </div>
-        <div class="px-4 pb-4 space-y-1">
-            <a href="{% url 'tiles:home' %}" class="block px-4 py-3 text-sm font-medium text-slate-700 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-all">Home</a>
-            <a href="{% url 'tiles:countries' %}" class="block px-4 py-3 text-sm font-medium text-slate-700 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-all">Locations</a>
-            <a href="{% url 'tiles:tile_catalog' %}" class="block px-4 py-3 text-sm font-medium text-slate-700 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-all">Tile Catalog</a>
-            <a href="{% url 'tiles:chat' %}" class="block px-4 py-3 text-sm font-medium text-slate-700 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-all">AI Chat</a>
-            <a href="{% url 'tiles:generate_image' %}" class="block px-4 py-3 text-sm font-medium text-slate-700 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-all">Generate Image</a>
-            <a href="{% url 'tiles:chat' %}" class="block mt-2 text-center px-4 py-3 bg-brand-600 text-white text-sm font-medium rounded-xl">Ask AI Assistant</a>
-        </div>
-    </div>
+
+<!-- LOGO -->
+
+<a href="{% url 'tiles:home' %}" 
+class="flex items-center gap-3 flex-shrink-0">
+
+
+<div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center shadow-lg">
+
+<iconify-icon 
+icon="lucide:layout-grid"
+class="text-white text-xl">
+</iconify-icon>
+
+</div>
+
+
+<div class="hidden sm:block">
+
+<span class="text-lg font-bold text-slate-900">
+Studio 
+<span class="text-brand-600">
+Mathri
+</span>
+</span>
+
+
+<span class="block text-[10px] text-slate-400 uppercase tracking-widest">
+Global Tile Marketplace
+</span>
+
+
+</div>
+
+
+</a>
+
+
+
+
+<!-- DESKTOP MENU -->
+
+<div class="hidden lg:flex items-center gap-1">
+
+
+<a href="{% url 'tiles:home' %}"
+class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg">
+
+Home
+
+</a>
+
+
+
+<a href="{% url 'tiles:countries' %}"
+class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg">
+
+Locations
+
+</a>
+
+
+
+
+<a href="{% url 'tiles:tile_catalog' %}"
+class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg">
+
+Tiles
+
+</a>
+
+
+
+{% if user.is_authenticated %}
+<a href="{% url 'tiles:chat' %}"
+class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg">
+AI Chat
+<span class="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
+</a>
+{% else %}
+<a href="{% url 'accounts:login' %}?next={% url 'tiles:chat' %}"
+class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg">
+AI Chat
+<span class="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
+</a>
+{% endif %}
+
+
+
+
+{% if user.is_authenticated %}
+
+<a href="{% url 'tiles:generate_image' %}"
+class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg">
+
+Generate
+
+</a>
+
+{% else %}
+
+<a href="{% url 'accounts:login' %}?next={% url 'tiles:generate_image' %}"
+class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg">
+
+Generate
+
+</a>
+
+{% endif %}
+
+
+
+</div>
+
+
+
+
+
+
+<!-- DESKTOP RIGHT SIDE -->
+
+<div class="hidden sm:flex items-center gap-3">
+
+
+{% if user.is_authenticated %}
+
+
+
+<!-- PROFILE -->
+
+
+<a href="{% url 'accounts:profile' %}"
+class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-100">
+
+
+<div class="w-10 h-10 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold">
+
+{{ user.username|first|upper }}
+
+</div>
+
+
+
+<div class="hidden md:block">
+
+<p class="text-sm font-semibold text-slate-800">
+
+{{ user.first_name|default:user.username }}
+
+</p>
+
+
+<p class="text-xs text-slate-500">
+
+Profile
+
+</p>
+
+</div>
+
+
+</a>
+
+
+
+
+<!-- LOGOUT -->
+
+<a href="{% url 'accounts:logout' %}"
+class="h-11 px-5 border border-slate-300 rounded-xl flex items-center gap-2 text-sm font-semibold hover:bg-slate-50">
+
+
+<iconify-icon icon="lucide:log-out"></iconify-icon>
+
+Logout
+
+</a>
+
+
+
+{% else %}
+
+
+
+
+<a href="{% url 'accounts:login' %}"
+class="h-11 px-5 border border-slate-300 rounded-xl flex items-center gap-2 text-sm font-semibold hover:bg-slate-50">
+
+
+<iconify-icon icon="lucide:key-round"></iconify-icon>
+
+Login
+
+</a>
+
+
+
+
+<a href="{% url 'accounts:register' %}"
+class="h-11 px-5 bg-emerald-600 text-white rounded-xl flex items-center gap-2 text-sm font-semibold">
+
+
+<iconify-icon icon="lucide:user-plus"></iconify-icon>
+
+Register
+
+</a>
+
+
+
+{% endif %}
+
+
+</div>
+
+
+
+
+
+<!-- MOBILE BUTTON -->
+
+<button id="mobile-btn"
+class="lg:hidden text-3xl text-slate-700">
+
+
+<iconify-icon icon="lucide:menu"></iconify-icon>
+
+
+</button>
+
+
+
+</div>
+
+
+
+
+
+
+<!-- MOBILE MENU -->
+
+<div id="mobile-menu"
+class="hidden lg:hidden absolute top-20 left-0 right-0 bg-white shadow-xl border-t">
+
+
+<div class="px-5 py-5 space-y-2">
+
+
+
+<a href="{% url 'tiles:home' %}"
+class="block px-4 py-3 rounded-lg hover:bg-slate-100">
+
+Home
+
+</a>
+
+
+
+<a href="{% url 'tiles:countries' %}"
+class="block px-4 py-3 rounded-lg hover:bg-slate-100">
+
+Locations
+
+</a>
+
+
+
+
+<a href="{% url 'tiles:tile_catalog' %}"
+class="block px-4 py-3 rounded-lg hover:bg-slate-100">
+
+Tiles
+
+</a>
+
+
+
+
+{% if user.is_authenticated %}
+<a href="{% url 'tiles:chat' %}"
+class="block px-4 py-3 rounded-lg hover:bg-slate-100">
+AI Chat
+</a>
+
+<a href="{% url 'tiles:generate_image' %}"
+class="block px-4 py-3 rounded-lg hover:bg-slate-100">
+Generate
+</a>
+
+<a href="{% url 'accounts:profile' %}"
+class="block px-4 py-3 rounded-lg hover:bg-slate-100">
+Profile
+</a>
+
+<a href="{% url 'accounts:logout' %}"
+class="block px-4 py-3 rounded-lg bg-red-500 text-white">
+Logout
+</a>
+{% else %}
+<a href="{% url 'accounts:login' %}?next={% url 'tiles:chat' %}"
+class="block px-4 py-3 rounded-lg hover:bg-slate-100">
+AI Chat
+</a>
+
+<a href="{% url 'accounts:login' %}?next={% url 'tiles:generate_image' %}"
+class="block px-4 py-3 rounded-lg hover:bg-slate-100">
+Generate
+</a>
+
+<a href="{% url 'accounts:login' %}"
+class="block px-4 py-3 rounded-lg hover:bg-slate-100">
+Login
+</a>
+
+<a href="{% url 'accounts:register' %}"
+class="block px-4 py-3 rounded-lg bg-emerald-600 text-white">
+Register
+</a>
+{% endif %}
+
+
+</div>
+
+</div>
+
+
+
 </nav>
+
+
+
+
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function(){
+
+const btn = document.getElementById("mobile-btn");
+
+const menu = document.getElementById("mobile-menu");
+
+
+if(btn && menu){
+
+btn.addEventListener("click", function(){
+
+menu.classList.toggle("hidden");
+
+});
+
+}
+
+});
+
+
+</script>

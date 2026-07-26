@@ -10,6 +10,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 import cloudinary.uploader
 
+
 from .models import (
     Country, State, City, Village,
     TileCategory, TileEffect, TileFinish, TileSize, TileProduct,
@@ -25,9 +26,12 @@ def _build_breadcrumbs(items):
 
 
 def _get_tiles_for_country(country):
-    return TileProduct.objects.filter(
+    qs = TileProduct.objects.filter(
         countries=country, is_active=True
     ).select_related('category').prefetch_related('effects', 'finishes', 'sizes')
+    if not qs.exists():
+        qs = TileProduct.objects.filter(is_active=True).select_related('category').prefetch_related('effects', 'finishes', 'sizes')
+    return qs
 
 
 def _build_tile_prompt(tile):
@@ -315,6 +319,7 @@ def generate_all_tile_images(request):
 # ─────────── AI CHAT ───────────
 
 @csrf_exempt
+@login_required(login_url='accounts:login')
 def chat_view(request):
     if request.method == 'POST':
         try:
@@ -382,6 +387,7 @@ def chat_view(request):
 
 # ─────────── IMAGE GENERATION ───────────
 
+@login_required(login_url='accounts:login')
 def generate_image_view(request):
     images = GeneratedImage.objects.all()[:12]
     form = ImageGenerateForm(request.POST or None)
@@ -448,3 +454,4 @@ def location_search(request):
             'parent': f"{s.country.flag_emoji} {s.country.name}"
         })
     return JsonResponse({'results': results})
+

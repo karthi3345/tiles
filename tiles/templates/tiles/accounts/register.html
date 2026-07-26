@@ -1,0 +1,215 @@
+{% extends "tiles/base.html" %}
+{% load static %}
+{% load socialaccount %}
+
+{% block title %}Create Account{% endblock %}
+
+{% block content %}
+
+<section class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center py-8 px-4">
+
+    <div class="w-full max-w-md mx-auto">
+
+        <!-- Header -->
+        <div class="text-center mb-6">
+
+
+
+           
+
+        </div>
+
+        <!-- Card -->
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 p-6 mt-16">
+
+            <!-- Marquee Banner -->
+            <div class="bg-gradient-to-r from-amber-500 via-brand-600 to-indigo-600 text-white rounded-xl shadow-sm p-2.5 mb-6 overflow-hidden flex items-center gap-2">
+                <iconify-icon icon="lucide:sparkles" class="text-lg flex-shrink-0 text-amber-200"></iconify-icon>
+                <marquee behavior="scroll" direction="left" scrollamount="6" class="font-semibold text-xs tracking-wide">
+                    Please login or register to use AI Chat & Tile Image Generator! ✨ Exclusive access for members.
+                </marquee>
+            </div>
+
+            <form method="POST" class="space-y-4">
+
+                {% csrf_token %}
+
+                <h1 class="text-3xl font-bold text-slate-900 text-center mb-6">
+    Create Account
+</h1>
+
+                <!-- Full Name -->
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">
+                        Full Name
+                    </label>
+
+                    <div class="relative">
+
+                        <iconify-icon
+                            icon="lucide:user"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
+                        </iconify-icon>
+
+                        <input
+                            type="text"
+                            name="full_name"
+                            required
+                            placeholder="John Doe"
+                            class="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition">
+
+                    </div>
+                </div>
+
+                <!-- Email -->
+                <div>
+
+                    <label class="block text-sm font-medium text-slate-700 mb-2">
+                        Email Address
+                    </label>
+
+                    <div class="relative">
+
+                        <iconify-icon
+                            icon="lucide:mail"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
+                        </iconify-icon>
+
+                        <input
+                            type="email"
+                            name="email"
+                            required
+                            placeholder="you@example.com"
+                            class="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition">
+
+                    </div>
+
+                </div>
+
+                <!-- Password -->
+                <div>
+
+                    <label class="block text-sm font-medium text-slate-700 mb-2">
+                        Password
+                    </label>
+
+                    <div class="relative">
+
+                        <iconify-icon
+                            icon="lucide:lock-keyhole"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
+                        </iconify-icon>
+
+                        <input
+                            type="password"
+                            name="password1"
+                            required
+                            placeholder="Create Password"
+                            class="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition">
+
+                    </div>
+
+                </div>
+
+                <!-- Confirm Password -->
+                <div>
+
+                    <label class="block text-sm font-medium text-slate-700 mb-2">
+                        Confirm Password
+                    </label>
+
+                    <div class="relative">
+
+                        <iconify-icon
+                            icon="lucide:shield-check"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
+                        </iconify-icon>
+
+                        <input
+                            type="password"
+                            name="password2"
+                            required
+                            placeholder="Confirm Password"
+                            class="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition">
+
+                    </div>
+
+                </div>
+
+                <!-- Register Button -->
+
+                <button
+                    type="submit"
+                    class="w-full h-11 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition duration-300">
+
+                    <span class="inline-flex items-center justify-center gap-2">
+
+                        <iconify-icon icon="lucide:user-round-plus" class="text-lg"></iconify-icon>
+
+                        Create Account
+
+                    </span>
+
+                </button>
+
+            </form>
+
+            <!-- Divider -->
+
+            <div class="flex items-center my-5">
+
+                <div class="flex-1 border-t border-slate-200"></div>
+
+                <span class="px-4 text-sm text-slate-400">
+                    OR
+                </span>
+
+                <div class="flex-1 border-t border-slate-200"></div>
+
+            </div>
+
+            <!-- Social Login -->
+
+            <div class="grid grid-cols-2 gap-3">
+<a href="{% provider_login_url 'google' %}"
+   class="h-11 rounded-xl border border-slate-300 hover:bg-slate-50 flex items-center justify-center gap-2 transition">
+
+    <iconify-icon icon="logos:google-icon"></iconify-icon>
+
+    Google
+
+</a>
+
+                <button
+                    class="h-11 rounded-xl border border-slate-300 hover:bg-slate-50 flex items-center justify-center gap-2 transition">
+
+                    <iconify-icon icon="logos:github-icon"></iconify-icon>
+
+                    GitHub
+
+                </button>
+
+            </div>
+
+            <!-- Footer -->
+
+            <div class="text-center mt-6 text-sm text-slate-600">
+
+                Already have an account?
+
+               <a href="{% url 'accounts:login' %}"
+   class="font-semibold text-brand-600 hover:text-brand-700 ml-1">
+
+    Login
+
+</a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}

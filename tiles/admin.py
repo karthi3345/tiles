@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     Country, State, City, Village,
     TileCategory, TileEffect, TileFinish, TileSize, TileProduct,
-    TileShowroom, MarketInsight, ChatSession, ChatMessage, GeneratedImage
+    TileShowroom, MarketInsight, ChatSession, ChatMessage, GeneratedImage,UserProfile
 )
 
 
@@ -155,3 +155,6 @@ class GeneratedImageAdmin(admin.ModelAdmin):
     def prompt_short(self, obj):
         return obj.prompt[:80] + '...' if len(obj.prompt) > 80 else obj.prompt
     prompt_short.short_description = 'Prompt'
+
+
+admin.site.register(UserProfile)

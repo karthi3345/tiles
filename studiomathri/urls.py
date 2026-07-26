@@ -3,9 +3,23 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+from django.contrib import admin
+from django.urls import path, include
+
+
 urlpatterns = [
+
     path('admin/', admin.site.urls),
+
+    # Home, tiles pages
     path('', include('tiles.urls')),
+
+    # Login/Profile/Logout
+    path('accounts/', include('accounts.urls')),
+
+    # Google login, signup etc
+    path('accounts/', include('allauth.urls')),
+
 ]
 
 if settings.DEBUG:

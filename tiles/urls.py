@@ -28,4 +28,6 @@ urlpatterns = [
 
     # Search API
     path('api/location-search/', views.location_search, name='location_search'),
+
+    
 ]

@@ -63,7 +63,7 @@
                 <a href="{% url 'tiles:tile_detail' slug=tile.slug %}" class="group bg-white rounded-2xl border border-slate-200/60 overflow-hidden hover:shadow-lg hover:shadow-blue-500/5 transition-all">
                     <div class="aspect-[4/3] bg-slate-100 relative overflow-hidden">
                         {% if tile.image %}
-                        <img src="{{ tile.image.url }}" alt="{{ tile.name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy">
+                        <img src="{{ tile.image }}" alt="{{ tile.name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy">
                         {% else %}
                         <div class="w-full h-full flex flex-col items-center justify-center text-slate-300">
                             <iconify-icon icon="lucide:image" class="text-3xl mb-1"></iconify-icon>
