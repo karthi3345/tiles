@@ -73,33 +73,40 @@
 
         {% if img.image %}
 
-        <img 
+        <img
             src="{{ img.image }}"
             alt="{{ img.prompt }}"
             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
         >
 
-        <a 
-            href="{{ img.image }}"
-            target="_blank"
-            class="absolute top-3 right-3 w-9 h-9 rounded-lg bg-white/90 backdrop-blur-sm flex items-center justify-center text-slate-600 hover:text-brand-600 opacity-0 group-hover:opacity-100 transition-all shadow-sm"
-        >
-            <iconify-icon 
-                icon="lucide:external-link"
-                class="text-base">
-            </iconify-icon>
-        </a>
+        <div class="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+
+            <a
+                href="{{ img.image }}"
+                target="_blank"
+                class="w-10 h-10 rounded-xl bg-white/90 backdrop-blur shadow-lg flex items-center justify-center text-slate-700 hover:bg-blue-600 hover:text-white transition"
+                title="Preview Image">
+                <iconify-icon icon="lucide:eye"></iconify-icon>
+            </a>
+
+            <a
+    href="{% url 'tiles:download_generated_image' img.id %}"
+    class="w-10 h-10 rounded-xl bg-white/90 backdrop-blur shadow-lg flex items-center justify-center text-slate-700 hover:bg-emerald-600 hover:text-white transition"
+    title="Download Image">
+    <iconify-icon icon="lucide:download"></iconify-icon>
+</a>
+
+        </div>
 
         {% else %}
 
         <div class="flex items-center justify-center h-full text-slate-400">
-            No Image
+            <iconify-icon icon="lucide:image-off" class="text-5xl"></iconify-icon>
         </div>
 
         {% endif %}
 
     </div>
-
 
     <div class="p-4">
 
@@ -107,15 +114,22 @@
             {{ img.prompt }}
         </p>
 
+        <div class="flex items-center justify-between mt-3">
 
-        <p class="text-[10px] text-slate-400 mt-2">
-            {{ img.created_at|date:"M d, Y H:i" }} · PNG
-        </p>
+            <span class="text-[10px] text-slate-400">
+                {{ img.created_at|date:"M d, Y H:i" }}
+            </span>
+
+            <span class="text-[10px] font-medium px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">
+                PNG
+            </span>
+
+        </div>
 
     </div>
 
-
 </div>
+
 
 {% endfor %}
 

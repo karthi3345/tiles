@@ -28,6 +28,11 @@ urlpatterns = [
 
     # Search API
     path('api/location-search/', views.location_search, name='location_search'),
+    path(
+    "download/<int:pk>/",
+    views.download_generated_image,
+    name="download_generated_image",
+),
 
     
 ]

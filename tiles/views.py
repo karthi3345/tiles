@@ -456,3 +456,29 @@ def location_search(request):
         })
     return JsonResponse({'results': results})
 
+
+
+#-------------Download IMages----------------
+
+import requests
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def download_generated_image(request, pk):
+    image = get_object_or_404(
+        GeneratedImage,
+        id=pk,
+        user=request.user
+    )
+
+    response = requests.get(image.image)
+
+    if response.status_code != 200:
+        return HttpResponse("Image not found.", status=404)
+
+    download = HttpResponse(response.content, content_type="image/png")
+    download["Content-Disposition"] = f'attachment; filename="tile-{pk}.png"'
+
+    return download
