@@ -2,6 +2,7 @@
 # Create your models here.
 from django.db import models
 from django.utils.text import slugify
+from django.contrib.auth.models import User
 
 
 class Country(models.Model):
@@ -321,11 +322,15 @@ class ChatMessage(models.Model):
 
 
 class GeneratedImage(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+
     prompt = models.TextField()
-    image = models.URLField(
-    blank=True,
-    null=True
-)
+    image = models.URLField(blank=True, null=True)
     model_used = models.CharField(max_length=200, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -340,11 +345,13 @@ from django.contrib.auth.models import User
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE,
-        related_name="profile"
-    )
+    user = models.ForeignKey(
+    User,
+    on_delete=models.CASCADE,
+    related_name="user_profile",
+    null=True,
+    blank=True,
+)
 
     full_name = models.CharField(max_length=200)
     phone = models.CharField(max_length=20, blank=True)

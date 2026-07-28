@@ -223,12 +223,11 @@ class Command(BaseCommand):
             'Concrete Effect Tiles': 'https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=800&q=80',
             'Glass Tiles': 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=800&q=80',
         }
-
         for td in tiles_data:
             cat = cat_map.get(td['cat'])
             if not cat:
                 continue
-            img_url = category_images.get(td['cat'], 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80')
+            img_url = f"https://source.unsplash.com/800x800/?{slugify(td['name'])}"
             product, created = TileProduct.objects.update_or_create(
                 name=td['name'],
                 defaults={

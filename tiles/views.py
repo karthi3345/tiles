@@ -389,7 +389,7 @@ def chat_view(request):
 
 @login_required(login_url='accounts:login')
 def generate_image_view(request):
-    images = GeneratedImage.objects.all()[:12]
+    images = GeneratedImage.objects.filter(user=request.user)
     form = ImageGenerateForm(request.POST or None)
 
     if request.method == 'POST':
@@ -405,6 +405,7 @@ def generate_image_view(request):
 
                 # Save URL to database
                 GeneratedImage.objects.create(
+                    user=request.user,
                     prompt=f"[{style}] {prompt}",
                     image=image_url,
                     model_used=image_gen_service.model,
