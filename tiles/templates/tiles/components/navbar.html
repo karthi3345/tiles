@@ -118,6 +118,40 @@ Generate
 
 </div>
 
+<!-- ADD SEARCH BAR HERE -->
+
+<div class="hidden md:flex flex-1 max-w-md mx-6">
+
+<form method="GET" action="{% url 'tiles:tile_catalog' %}"
+class="w-full flex items-center">
+
+<div class="relative w-full">
+
+<iconify-icon 
+icon="lucide:search"
+class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+</iconify-icon>
+
+<input
+type="text"
+name="q"
+placeholder="Search tiles by name, category, color, size..."
+class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200"
+/>
+
+</div>
+
+
+<button type="submit"
+class="ml-2 px-4 py-2.5 bg-brand-600 text-white rounded-xl">
+
+<iconify-icon icon="lucide:search"></iconify-icon>
+
+</button>
+
+</form>
+
+</div>
 
 
 
@@ -129,6 +163,8 @@ Generate
 
 
 {% if user.is_authenticated %}
+
+
 
 
 
