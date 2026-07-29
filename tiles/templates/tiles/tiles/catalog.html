@@ -17,14 +17,14 @@
                 <div class="lg:col-span-2">{{ form.query }}</div>
                 <div>{{ form.category }}</div>
                 <div>{{ form.tile_type }}</div>
-                <div>{{ form.country }}</div>
+                <div>{{ form.usage_type }}</div>
             </div>
             <div class="flex items-center gap-3 mt-3">
                 <button type="submit" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-xl transition-colors flex items-center gap-2">
                     <iconify-icon icon="lucide:search" class="text-sm"></iconify-icon> Search
                 </button>
                 <a href="{% url 'tiles:tile_catalog' %}" class="text-sm text-slate-500 hover:text-brand-600 transition-colors">Clear filters</a>
-                {% if query or request.GET.category or request.GET.tile_type or request.GET.country %}
+                {% if query or request.GET.category or request.GET.tile_type or request.GET.usage_type %}
                 <span class="text-sm text-slate-400 ml-auto">{{ total }} results</span>
                 {% endif %}
             </div>

@@ -21,6 +21,7 @@
         {% endif %}
 
         <div class="grid lg:grid-cols-5 gap-8">
+            <!-- Left Column: Settings -->
             <div class="lg:col-span-2">
                 <div class="bg-white rounded-2xl border border-slate-200/60 p-6 lg:sticky lg:top-28">
                     <h2 class="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2">
@@ -56,116 +57,218 @@
                 </div>
             </div>
 
+            <!-- Right Column: Generated Images -->
             <div class="lg:col-span-3">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-lg font-semibold text-slate-900">Generated Images</h2>
                     <span class="text-sm text-slate-400">{{ generated_images|length }} images</span>
                 </div>
+
                 {% if generated_images %}
+                <div class="grid sm:grid-cols-2 gap-4">
+                    {% for img in generated_images %}
+                    <div class="bg-white rounded-2xl border border-slate-200/60 overflow-hidden hover:shadow-lg hover:shadow-blue-500/5 transition-all group">
+                        <div class="aspect-square bg-slate-100 relative overflow-hidden">
+                            {% if img.image %}
+                            <img src="{{ img.image }}" alt="{{ img.prompt }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                            <div class="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                <a href="{{ img.image }}" target="_blank" class="w-10 h-10 rounded-xl bg-white/90 backdrop-blur shadow-lg flex items-center justify-center text-slate-700 hover:bg-blue-600 hover:text-white transition" title="Preview Image">
+                                    <iconify-icon icon="lucide:eye"></iconify-icon>
+                                </a>
+                                <a href="#" data-download-url="{% url 'tiles:download_generated_image' img.id %}" class="download-btn w-10 h-10 rounded-xl bg-white/90 backdrop-blur shadow-lg flex items-center justify-center text-slate-700 hover:bg-emerald-600 hover:text-white transition" title="Download Image">
+                                    <iconify-icon icon="lucide:download"></iconify-icon>
+                                </a>
+                            </div>
+                            {% else %}
+                            <div class="flex items-center justify-center h-full text-slate-400">
+                                <iconify-icon icon="lucide:image-off" class="text-5xl"></iconify-icon>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="p-4">
+                            <p class="text-xs text-slate-500 line-clamp-2">{{ img.prompt }}</p>
+                            <div class="flex items-center justify-between mt-3">
+                                <span class="text-[10px] text-slate-400">{{ img.created_at|date:"M d, Y H:i" }}</span>
+                                <span class="text-[10px] font-medium px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">PNG</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
 
-<div class="grid sm:grid-cols-2 gap-4">
-
-{% for img in generated_images %}
-
-<div class="bg-white rounded-2xl border border-slate-200/60 overflow-hidden hover:shadow-lg hover:shadow-blue-500/5 transition-all group">
-
-    <div class="aspect-square bg-slate-100 relative overflow-hidden">
-
-        {% if img.image %}
-
-        <img
-            src="{{ img.image }}"
-            alt="{{ img.prompt }}"
-            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-        >
-
-        <div class="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-
-            <a
-                href="{{ img.image }}"
-                target="_blank"
-                class="w-10 h-10 rounded-xl bg-white/90 backdrop-blur shadow-lg flex items-center justify-center text-slate-700 hover:bg-blue-600 hover:text-white transition"
-                title="Preview Image">
-                <iconify-icon icon="lucide:eye"></iconify-icon>
-            </a>
-
-            <a
-    href="{% url 'tiles:download_generated_image' img.id %}"
-    class="w-10 h-10 rounded-xl bg-white/90 backdrop-blur shadow-lg flex items-center justify-center text-slate-700 hover:bg-emerald-600 hover:text-white transition"
-    title="Download Image">
-    <iconify-icon icon="lucide:download"></iconify-icon>
-</a>
-
-        </div>
-
-        {% else %}
-
-        <div class="flex items-center justify-center h-full text-slate-400">
-            <iconify-icon icon="lucide:image-off" class="text-5xl"></iconify-icon>
-        </div>
-
-        {% endif %}
-
-    </div>
-
-    <div class="p-4">
-
-        <p class="text-xs text-slate-500 line-clamp-2">
-            {{ img.prompt }}
-        </p>
-
-        <div class="flex items-center justify-between mt-3">
-
-            <span class="text-[10px] text-slate-400">
-                {{ img.created_at|date:"M d, Y H:i" }}
-            </span>
-
-            <span class="text-[10px] font-medium px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">
-                PNG
-            </span>
-
-        </div>
-
-    </div>
-
-</div>
-
-
-{% endfor %}
-
-</div>
-
-
-{% else %}
-
-<div class="bg-white rounded-2xl border border-slate-200/60 p-16 text-center">
-
-    <iconify-icon 
-        icon="lucide:image"
-        class="text-5xl text-slate-200 mb-4">
-    </iconify-icon>
-
-    <h3 class="text-lg font-semibold text-slate-400 mb-2">
-        No images yet
-    </h3>
-
-    <p class="text-sm text-slate-400 max-w-sm mx-auto">
-        Describe a tile design and click generate to create your first image.
-    </p>
-
-</div>
-
-{% endif %}
+                {% else %}
+                <div class="bg-white rounded-2xl border border-slate-200/60 p-16 text-center">
+                    <iconify-icon icon="lucide:image" class="text-5xl text-slate-200 mb-4"></iconify-icon>
+                    <h3 class="text-lg font-semibold text-slate-400 mb-2">No images yet</h3>
+                    <p class="text-sm text-slate-400 max-w-sm mx-auto">Describe a tile design and click generate to create your first image.</p>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </section>
+
+<!-- Download Modal -->
+<div id="downloadModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 w-96">
+        <h3 class="text-lg font-semibold mb-4">Download Settings</h3>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">File Name</label>
+                <input type="text" id="fileName" class="mt-1 block w-full border-gray-300 rounded-md" value="tile-design" />
+            </div>
+            <div class="flex space-x-2">
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700">Width (px)</label>
+                    <input type="number" id="imgWidth" class="mt-1 block w-full border-gray-300 rounded-md" value="1200" />
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700">Height (px)</label>
+                    <input type="number" id="imgHeight" class="mt-1 block w-full border-gray-300 rounded-md" value="1200" />
+                </div>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" id="lockAspect" class="h-4 w-4 text-indigo-600 border-gray-300 rounded" checked />
+                <label for="lockAspect" class="ml-2 text-sm text-gray-600">Lock Aspect Ratio</label>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Resolution (DPI)</label>
+                <div class="flex space-x-2 mt-1">
+                    <label class="inline-flex items-center"><input type="radio" name="dpi" value="72" class="form-radio" checked /> 72 DPI (Web)</label>
+                    <label class="inline-flex items-center"><input type="radio" name="dpi" value="150" class="form-radio" /> 150 DPI</label>
+                    <label class="inline-flex items-center"><input type="radio" name="dpi" value="300" class="form-radio" /> 300 DPI (Print)</label>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Output Format</label>
+                <div class="flex space-x-2 mt-1">
+                    <label class="inline-flex items-center"><input type="radio" name="format" value="png" class="form-radio" checked /> PNG</label>
+                    <label class="inline-flex items-center"><input type="radio" name="format" value="jpg" class="form-radio" /> JPG</label>
+                    <label class="inline-flex items-center"><input type="radio" name="format" value="webp" class="form-radio" /> WebP</label>
+                </div>
+            </div>
+            <div id="qualityContainer" class="hidden">
+                <label class="block text-sm font-medium text-gray-700">Quality (JPG/WebP)</label>
+                <input type="range" id="qualitySlider" min="1" max="100" value="100" class="w-full" />
+                <div class="text-sm text-gray-500" id="qualityDisplay">100%</div>
+            </div>
+        </div>
+        <div class="mt-6 flex justify-end space-x-3">
+            <button id="cancelDownload" class="px-4 py-2 bg-gray-200 text-gray-800 rounded">Cancel</button>
+            <button id="confirmDownload" class="px-4 py-2 bg-indigo-600 text-white rounded">Download</button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-document.querySelectorAll('.quick-prompt').forEach(b=>{b.addEventListener('click',function(){document.getElementById('id_prompt').value=this.dataset.prompt})});
-const f=document.getElementById('gen-form'),b=document.getElementById('gen-btn');
-f.addEventListener('submit',function(){b.disabled=true;b.innerHTML='<iconify-icon icon="lucide:loader-2" class="text-lg animate-spin"></iconify-icon> Generating... (30-60s)'});
+document.addEventListener("DOMContentLoaded", function () {
+    const modal = document.getElementById("downloadModal");
+    let currentDownloadUrl = "";
+
+    document.querySelectorAll('.quick-prompt').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.getElementById('id_prompt').value = this.dataset.prompt;
+        });
+    });
+
+    const form = document.getElementById("gen-form");
+    const genBtn = document.getElementById("gen-btn");
+    if (form && genBtn) {
+        form.addEventListener("submit", function () {
+            genBtn.disabled = true;
+            genBtn.innerHTML = '<iconify-icon icon="lucide:loader-2" class="animate-spin"></iconify-icon> Generating...';
+        });
+    }
+
+    document.querySelectorAll(".download-btn").forEach(btn => {
+        btn.addEventListener("click", function (e) {
+            e.preventDefault();
+            currentDownloadUrl = this.dataset.downloadUrl;
+            document.getElementById("fileName").value = "tile-design";
+            document.getElementById("imgWidth").value = "1200";
+            document.getElementById("imgHeight").value = "1200";
+            document.querySelector('input[name="dpi"][value="72"]').checked = true;
+            document.querySelector('input[name="format"][value="png"]').checked = true;
+            document.getElementById("qualitySlider").value = 100;
+            document.getElementById("qualityDisplay").textContent = "100%";
+            document.getElementById("qualityContainer").classList.add("hidden");
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        });
+    });
+
+    // Show/hide quality slider based on format
+    document.querySelectorAll('input[name="format"]').forEach(radio => {
+        radio.addEventListener("change", function () {
+            const container = document.getElementById("qualityContainer");
+            if (this.value === "jpg" || this.value === "webp") {
+                container.classList.remove("hidden");
+            } else {
+                container.classList.add("hidden");
+            }
+        });
+    });
+
+    const widthInput = document.getElementById("imgWidth");
+    const heightInput = document.getElementById("imgHeight");
+    const lockAspect = document.getElementById("lockAspect");
+    let originalRatio = 1;
+
+    lockAspect.addEventListener("change", function () {
+        if (this.checked) {
+            const w = parseInt(widthInput.value) || 1;
+            const h = parseInt(heightInput.value) || 1;
+            originalRatio = w / h;
+        }
+    });
+
+    widthInput.addEventListener("input", function () {
+        if (lockAspect.checked) {
+            const w = parseInt(this.value) || 0;
+            heightInput.value = Math.round(w / originalRatio);
+        }
+    });
+
+    heightInput.addEventListener("input", function () {
+        if (lockAspect.checked) {
+            const h = parseInt(this.value) || 0;
+            widthInput.value = Math.round(h * originalRatio);
+        }
+    });
+
+    const qualitySlider = document.getElementById("qualitySlider");
+    const qualityDisplay = document.getElementById("qualityDisplay");
+    qualitySlider.addEventListener("input", function () {
+        qualityDisplay.textContent = this.value + "%";
+    });
+
+    document.getElementById("confirmDownload").addEventListener("click", function () {
+        const filename = document.getElementById("fileName").value;
+        const width = widthInput.value;
+        const height = heightInput.value;
+        const dpi = document.querySelector('input[name="dpi"]:checked').value;
+        const format = document.querySelector('input[name="format"]:checked').value;
+        const quality = qualitySlider.value;
+        const url = new URL(currentDownloadUrl, window.location.origin);
+        url.searchParams.set("filename", filename);
+        url.searchParams.set("width", width);
+        url.searchParams.set("height", height);
+        url.searchParams.set("dpi", dpi);
+        url.searchParams.set("format", format);
+        if (format === "jpg" || format === "webp") {
+            url.searchParams.set("quality", quality);
+        }
+        window.location.href = url.toString();
+        modal.classList.remove("flex");
+        modal.classList.add("hidden");
+    });
+
+    document.getElementById("cancelDownload").addEventListener("click", function () {
+        modal.classList.remove("flex");
+        modal.classList.add("hidden");
+    });
+});
 </script>
 {% endblock %}

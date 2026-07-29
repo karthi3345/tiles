@@ -77,8 +77,8 @@ class VillageAdmin(admin.ModelAdmin):
 
 @admin.register(TileCategory)
 class TileCategoryAdmin(admin.ModelAdmin):
-    list_display = ['name', 'tile_type', 'sort_order']
-    list_filter = ['tile_type']
+    list_display = ['name', 'tile_type', 'usage_type', 'sort_order']
+    list_filter = ['tile_type', 'usage_type']
     ordering = ['sort_order', 'name']
 
 

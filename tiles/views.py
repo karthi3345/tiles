@@ -180,32 +180,59 @@ def village_tiles(request, country_slug, state_slug, city_slug, village_slug):
 
 def tile_catalog(request):
     form = TileSearchForm(request.GET or None)
-    tiles = TileProduct.objects.filter(is_active=True).select_related('category').prefetch_related('effects', 'finishes', 'sizes', 'countries')
+
+    tiles = TileProduct.objects.filter(
+        is_active=True
+    ).select_related(
+        'category'
+    ).prefetch_related(
+        'effects',
+        'finishes',
+        'sizes',
+        'countries'
+    )
 
     query = request.GET.get('query', '')
     cat_slug = request.GET.get('category', '')
     tile_type = request.GET.get('tile_type', '')
     country_slug = request.GET.get('country', '')
+    usage_type = request.GET.get('usage_type', '')
+
+    if usage_type:
+        tiles = tiles.filter(category__usage_type=usage_type)
 
     if query:
         tiles = tiles.filter(
-            Q(name__icontains=query) | Q(description__icontains=query) |
-            Q(material__icontains=query) | Q(effects__name__icontains=query)
+            Q(name__icontains=query) |
+            Q(description__icontains=query) |
+            Q(material__icontains=query) |
+            Q(effects__name__icontains=query)
         ).distinct()
+
     if cat_slug:
         tiles = tiles.filter(category__slug=cat_slug)
+
     if tile_type:
         tiles = tiles.filter(category__tile_type=tile_type)
+
     if country_slug:
         tiles = tiles.filter(countries__slug=country_slug).distinct()
 
-    breadcrumbs = _build_breadcrumbs([('Tile Catalog', None)])
-    return render(request, 'tiles/tiles/catalog.html', {
-        'tiles': tiles, 'form': form, 'query': query, 'total': tiles.count(),
-        'breadcrumbs': breadcrumbs,
-    })
+    breadcrumbs = _build_breadcrumbs([
+        ('Tile Catalog', None)
+    ])
 
-
+    return render(
+        request,
+        'tiles/tiles/catalog.html',
+        {
+            'tiles': tiles,
+            'form': form,
+            'query': query,
+            'total': tiles.count(),
+            'breadcrumbs': breadcrumbs,
+        }
+    )
 def tile_detail(request, slug):
     tile = get_object_or_404(TileProduct, slug=slug, is_active=True)
     related = TileProduct.objects.filter(
@@ -460,10 +487,15 @@ def location_search(request):
 
 #-------------Download IMages----------------
 
+from io import BytesIO
+
 import requests
+from PIL import Image
+
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
+
 
 @login_required
 def download_generated_image(request, pk):
@@ -478,7 +510,57 @@ def download_generated_image(request, pk):
     if response.status_code != 200:
         return HttpResponse("Image not found.", status=404)
 
-    download = HttpResponse(response.content, content_type="image/png")
-    download["Content-Disposition"] = f'attachment; filename="tile-{pk}.png"'
+    # Settings from modal
+    width = int(request.GET.get("width", 1200))
+    height = int(request.GET.get("height", 1200))
+    dpi = int(request.GET.get("dpi", 300))
+    fmt = request.GET.get("format", "png").lower()
+    quality = int(request.GET.get("quality", 100))
+    filename = request.GET.get("filename", f"tile-{pk}")
+
+    # Open image
+    img = Image.open(BytesIO(response.content)).convert("RGB")
+
+    # Resize
+    img = img.resize((width, height), Image.LANCZOS)
+
+    output = BytesIO()
+
+    if fmt == "jpg":
+        img.save(
+            output,
+            format="JPEG",
+            quality=quality,
+            dpi=(dpi, dpi),
+            optimize=True,
+        )
+        content_type = "image/jpeg"
+        extension = "jpg"
+
+    elif fmt == "webp":
+        img.save(
+            output,
+            format="WEBP",
+            quality=quality,
+            method=6,
+        )
+        content_type = "image/webp"
+        extension = "webp"
+
+    else:
+        img.save(
+            output,
+            format="PNG",
+            dpi=(dpi, dpi),
+        )
+        content_type = "image/png"
+        extension = "png"
+
+    output.seek(0)
+
+    download = HttpResponse(output.getvalue(), content_type=content_type)
+    download["Content-Disposition"] = (
+        f'attachment; filename="{filename}.{extension}"'
+    )
 
     return download

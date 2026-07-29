@@ -124,6 +124,15 @@ class TileCategory(models.Model):
     slug = models.SlugField(max_length=170, unique=True, blank=True)
     description = models.TextField(blank=True)
     icon = models.CharField(max_length=50, blank=True)
+    usage_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('residential', 'Residential'),
+            ('commercial', 'Commercial'),
+        ],
+        default='residential',
+        help_text='Whether the category is for residential or commercial projects',
+    )
     tile_type = models.CharField(max_length=20, default='both',
         choices=[
             ('floor', 'Floor'),
