@@ -80,13 +80,18 @@
 
         <!-- Password Input -->
         <input
-            type="password"
-            id="password"
-            name="password"
-            required
-            placeholder="Enter Password"
-            class="w-full h-11 pl-10 pr-12 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition">
-
+    type="password"
+    id="password1"
+    name="password1"
+    required
+    minlength="8"
+    pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&^#()_+\-=\[\]{};':\\|,.<>/?]).{8,}$"
+    title="Password must be at least 8 characters and contain an uppercase letter, lowercase letter, number, and special character."
+    placeholder="Create Password"
+    class="w-full h-11 pl-10 pr-12 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition">
+<p class="mt-2 text-xs text-slate-500">
+    Password must be at least 8 characters and include an uppercase letter, lowercase letter, number, and special character.
+</p>
         <!-- Show/Hide Password -->
         <button
             type="button"

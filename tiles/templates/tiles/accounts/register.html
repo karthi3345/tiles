@@ -99,13 +99,16 @@
         </iconify-icon>
 
         <input
-            type="password"
-            id="password1"
-            name="password1"
-            required
-            placeholder="Create Password"
-            class="w-full h-11 pl-10 pr-12 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition">
-
+    type="password"
+    id="password1"
+    name="password1"
+    oninput="checkPasswordMatch()"
+    required
+    minlength="8"
+    pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&^#()_+\-=\[\]{};':\\|,.<>/?]).{8,}$"
+    title="Password must be at least 8 characters and contain an uppercase letter, lowercase letter, number, and special character."
+    placeholder="Create Password"
+    class="w-full h-11 pl-10 pr-12 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition">
         <button
             type="button"
             onclick="togglePassword('password1', 'eye1')"
@@ -115,9 +118,12 @@
                 icon="lucide:eye"
                 class="text-xl">
             </iconify-icon>
+
+            
         </button>
     </div>
 </div>
+
                 <!-- Confirm Password -->
 <div>
     <label class="block text-sm font-medium text-slate-700 mb-2">
@@ -131,12 +137,15 @@
         </iconify-icon>
 
         <input
-            type="password"
-            id="password2"
-            name="password2"
-            required
-            placeholder="Confirm Password"
-            class="w-full h-11 pl-10 pr-12 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition">
+    type="password"
+    id="password2"
+    name="password2"
+    oninput="checkPasswordMatch()"
+    required
+    minlength="8"
+    placeholder="Confirm Password"
+    title="Re-enter the same password."
+    class="w-full h-11 pl-10 pr-12 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition">
 
         <button
             type="button"
@@ -150,6 +159,9 @@
         </button>
     </div>
 </div>
+<p id="password-error" class="mt-2 text-sm text-red-600 hidden">
+    Passwords do not match.
+</p>
                 <!-- Register Button -->
 
                 <button
@@ -237,6 +249,26 @@ function togglePassword(inputId, iconId) {
     } else {
         input.type = "password";
         icon.setAttribute("icon", "lucide:eye");
+    }
+}
+
+function checkPasswordMatch() {
+    const password = document.getElementById("password1");
+    const confirmPassword = document.getElementById("password2");
+    const error = document.getElementById("password-error");
+
+    if (confirmPassword.value === "") {
+        error.classList.add("hidden");
+        confirmPassword.setCustomValidity("");
+        return;
+    }
+
+    if (password.value !== confirmPassword.value) {
+        error.classList.remove("hidden");
+        confirmPassword.setCustomValidity("Passwords do not match");
+    } else {
+        error.classList.add("hidden");
+        confirmPassword.setCustomValidity("");
     }
 }
 </script>
