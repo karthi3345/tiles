@@ -192,7 +192,7 @@ def tile_catalog(request):
         'countries'
     )
 
-    query = request.GET.get('query', '')
+    query = request.GET.get('q', '').strip()
     cat_slug = request.GET.get('category', '')
     tile_type = request.GET.get('tile_type', '')
     country_slug = request.GET.get('country', '')
@@ -202,13 +202,14 @@ def tile_catalog(request):
         tiles = tiles.filter(category__usage_type=usage_type)
 
     if query:
-        tiles = tiles.filter(
-            Q(name__icontains=query) |
-            Q(description__icontains=query) |
-            Q(material__icontains=query) |
-            Q(effects__name__icontains=query)
-        ).distinct()
-
+       tiles = tiles.filter(
+        Q(name__icontains=query) |
+        Q(description__icontains=query) |
+        Q(material__icontains=query) |
+        Q(category__name__icontains=query) |
+        Q(effects__name__icontains=query) |
+        Q(finishes__name__icontains=query)
+    ).distinct()
     if cat_slug:
         tiles = tiles.filter(category__slug=cat_slug)
 
