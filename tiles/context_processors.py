@@ -17,3 +17,23 @@ def notification_context(request):
         "notifications": [],
         "unread_count": 0,
     }
+
+
+from tiles.models import UserProfile
+
+
+def user_profile(request):
+
+    profile = None
+
+    if request.user.is_authenticated:
+        profile, created = UserProfile.objects.get_or_create(
+            user=request.user,
+            defaults={
+                "full_name": request.user.first_name
+            }
+        )
+
+    return {
+        "user_profile": profile
+    }

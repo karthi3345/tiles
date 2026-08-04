@@ -98,3 +98,11 @@ class TileSearchForm(forms.Form):
         ] + [
             (c.slug, c.name) for c in Country.objects.all()
         ]
+
+from django import forms
+from .models import UserProfile
+
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = ["profile_picture"]

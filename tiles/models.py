@@ -350,30 +350,41 @@ class GeneratedImage(models.Model):
         return f"Generated: {self.prompt[:50]}"
 
 
+from django.db import models
 from django.contrib.auth.models import User
 
 
 class UserProfile(models.Model):
-    user = models.ForeignKey(
-    User,
-    on_delete=models.CASCADE,
-    related_name="user_profile",
-    null=True,
-    blank=True,
-)
 
-    full_name = models.CharField(max_length=200)
-    phone = models.CharField(max_length=20, blank=True)
-    profile_image = models.ImageField(
-        upload_to="profiles/",
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="user_profile"
+    )
+
+    full_name = models.CharField(
+        max_length=200,
+        blank=True
+    )
+
+    phone = models.CharField(
+        max_length=20,
+        blank=True
+    )
+
+    profile_picture = models.ImageField(
+        upload_to="profile_pictures/",
         blank=True,
         null=True
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
 
     def __str__(self):
-        return self.full_name
+        return self.user.username
 
 from django.conf import settings
 
