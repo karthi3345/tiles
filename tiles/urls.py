@@ -33,6 +33,8 @@ urlpatterns = [
     views.download_generated_image,
     name="download_generated_image",
 ),
+path('notifications/', views.NotificationListView.as_view(), name='notifications'),
+path('notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
 
     
 ]

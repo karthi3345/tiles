@@ -14,7 +14,7 @@ import cloudinary.uploader
 from .models import (
     Country, State, City, Village,
     TileCategory, TileEffect, TileFinish, TileSize, TileProduct,
-    MarketInsight, ChatSession, ChatMessage, GeneratedImage
+    MarketInsight, ChatSession, ChatMessage, GeneratedImage,Notification
 )
 from .forms import ChatForm, ImageGenerateForm, TileSearchForm
 from .services.ai_chat import chat_service
@@ -564,3 +564,35 @@ def download_generated_image(request, pk):
     )
 
     return download
+
+from django.views.generic import ListView
+from django.contrib.auth.mixins import LoginRequiredMixin
+
+# ─────────── NOTIFICATIONS ───────────
+
+class NotificationListView(LoginRequiredMixin, ListView):
+    model = Notification
+    template_name = 'tiles/notifications.html'
+    context_object_name = 'notifications'
+    paginate_by = 20
+
+    def get_queryset(self):
+        return Notification.objects.filter(
+            user=self.request.user
+        ).order_by('-created_at')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['unread_count'] = Notification.objects.filter(
+            user=self.request.user, is_read=False
+        ).count()
+        return ctx
+
+
+@require_POST
+def mark_all_notifications_read(request):
+    if request.user.is_authenticated:
+        Notification.objects.filter(
+            user=request.user, is_read=False
+        ).update(is_read=True)
+    return redirect(request.META.get('HTTP_REFERER', '/'))

@@ -374,3 +374,36 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.full_name
+
+from django.conf import settings
+
+class Notification(models.Model):
+    NOTIF_TYPES = [
+        ('image_generated', 'Image Generated'),
+        ('image_failed', 'Image Failed'),
+        ('download_ready', 'Download Ready'),
+        ('download_complete', 'Download Complete'),
+        ('general', 'General'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    notif_type = models.CharField(
+        max_length=30, choices=NOTIF_TYPES, default='general'
+    )
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    related_url = models.CharField(max_length=500, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def get_absolute_url(self):
+        return self.related_url if self.related_url else '#'
+
+    def __str__(self):
+        return f"{self.notif_type} — {self.user.username}"

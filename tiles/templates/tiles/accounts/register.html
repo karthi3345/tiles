@@ -87,55 +87,69 @@
                 </div>
 
                 <!-- Password -->
-                <div>
+<div>
+    <label class="block text-sm font-medium text-slate-700 mb-2">
+        Password
+    </label>
 
-                    <label class="block text-sm font-medium text-slate-700 mb-2">
-                        Password
-                    </label>
+    <div class="relative">
+        <iconify-icon
+            icon="lucide:lock-keyhole"
+            class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
+        </iconify-icon>
 
-                    <div class="relative">
+        <input
+            type="password"
+            id="password1"
+            name="password1"
+            required
+            placeholder="Create Password"
+            class="w-full h-11 pl-10 pr-12 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition">
 
-                        <iconify-icon
-                            icon="lucide:lock-keyhole"
-                            class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
-                        </iconify-icon>
-
-                        <input
-                            type="password"
-                            name="password1"
-                            required
-                            placeholder="Create Password"
-                            class="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition">
-
-                    </div>
-
-                </div>
-
+        <button
+            type="button"
+            onclick="togglePassword('password1', 'eye1')"
+            class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 hover:text-brand-600 focus:outline-none">
+            <iconify-icon
+                id="eye1"
+                icon="lucide:eye"
+                class="text-xl">
+            </iconify-icon>
+        </button>
+    </div>
+</div>
                 <!-- Confirm Password -->
-                <div>
+<div>
+    <label class="block text-sm font-medium text-slate-700 mb-2">
+        Confirm Password
+    </label>
 
-                    <label class="block text-sm font-medium text-slate-700 mb-2">
-                        Confirm Password
-                    </label>
+    <div class="relative">
+        <iconify-icon
+            icon="lucide:shield-check"
+            class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
+        </iconify-icon>
 
-                    <div class="relative">
+        <input
+            type="password"
+            id="password2"
+            name="password2"
+            required
+            placeholder="Confirm Password"
+            class="w-full h-11 pl-10 pr-12 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition">
 
-                        <iconify-icon
-                            icon="lucide:shield-check"
-                            class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">
-                        </iconify-icon>
-
-                        <input
-                            type="password"
-                            name="password2"
-                            required
-                            placeholder="Confirm Password"
-                            class="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-300 focus:border-brand-500 focus:ring-2 focus:ring-brand-200 outline-none transition">
-
-                    </div>
-
-                </div>
-
+        <button
+            type="button"
+            onclick="togglePassword('password2', 'eye2')"
+            class="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 hover:text-brand-600 focus:outline-none">
+            <iconify-icon
+                id="eye2"
+                icon="lucide:eye"
+                class="text-xl">
+            </iconify-icon>
+        </button>
+    </div>
+</div>
                 <!-- Register Button -->
 
                 <button
@@ -211,5 +225,20 @@
     </div>
 
 </section>
+
+<script>
+function togglePassword(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+
+    if (input.type === "password") {
+        input.type = "text";
+        icon.setAttribute("icon", "lucide:eye-off");
+    } else {
+        input.type = "password";
+        icon.setAttribute("icon", "lucide:eye");
+    }
+}
+</script>
 
 {% endblock %}

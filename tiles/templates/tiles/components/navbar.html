@@ -2,397 +2,372 @@
 
 <nav class="fixed top-0 left-0 right-0 z-[9999] h-20 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
 
-<div class="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-
+<div class="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
 
 <!-- LOGO -->
-
-<a href="{% url 'tiles:home' %}" 
-class="flex items-center gap-3 flex-shrink-0">
-
-
-<div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center shadow-lg">
-
-<iconify-icon 
-icon="lucide:layout-grid"
-class="text-white text-xl">
-</iconify-icon>
-
-</div>
-
-
-<div class="hidden sm:block">
-
-<span class="text-lg font-bold text-slate-900">
-Studio 
-<span class="text-brand-600">
-Mathri
-</span>
-</span>
-
-
-<span class="block text-[10px] text-slate-400 uppercase tracking-widest">
-Global Tile Marketplace
-</span>
-
-
-</div>
-
-
+<a href="{% url 'tiles:home' %}" class="flex items-center gap-3 flex-shrink-0">
+    <div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center shadow-lg">
+        <iconify-icon icon="lucide:layout-grid" class="text-white text-xl"></iconify-icon>
+    </div>
+    <div class="hidden sm:block">
+        <span class="text-lg font-bold text-slate-900">Studio <span class="text-brand-600">Mathri</span></span>
+        <span class="block text-[10px] text-slate-400 uppercase tracking-widest">Global Tile Marketplace</span>
+    </div>
 </a>
-
-
 
 
 <!-- DESKTOP MENU -->
+<div class="hidden lg:flex items-center gap-1 flex-shrink-0">
+    <a href="{% url 'tiles:home' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">Home</a>
+    <a href="{% url 'tiles:countries' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">Locations</a>
+    <a href="{% url 'tiles:tile_catalog' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">Tiles</a>
 
-<div class="hidden lg:flex items-center gap-1">
-
-
-<a href="{% url 'tiles:home' %}"
-class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg">
-
-Home
-
-</a>
-
-
-
-<a href="{% url 'tiles:countries' %}"
-class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg">
-
-Locations
-
-</a>
-
-
-
-
-<a href="{% url 'tiles:tile_catalog' %}"
-class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg">
-
-Tiles
-
-</a>
-
-
-
-{% if user.is_authenticated %}
-<a href="{% url 'tiles:chat' %}"
-class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg">
-AI Chat
-<span class="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
-</a>
-{% else %}
-<a href="{% url 'accounts:login' %}?next={% url 'tiles:chat' %}"
-class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg">
-AI Chat
-<span class="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
-</a>
-{% endif %}
-
-
-
-
-{% if user.is_authenticated %}
-
-<a href="{% url 'tiles:generate_image' %}"
-class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg">
-
-Generate
-
-</a>
-
-{% else %}
-
-<a href="{% url 'accounts:login' %}?next={% url 'tiles:generate_image' %}"
-class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg">
-
-Generate
-
-</a>
-
-{% endif %}
-
-
-
-</div>
-
-<!-- ADD SEARCH BAR HERE -->
-
-<div class="hidden md:flex flex-1 max-w-md mx-6">
-
-<form method="GET" action="{% url 'tiles:tile_catalog' %}"
-class="w-full flex items-center">
-
-<div class="relative w-full">
-
-<iconify-icon 
-icon="lucide:search"
-class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-</iconify-icon>
-
-<input
-type="text"
-name="q"
-placeholder="Search tiles by name, category, color, size..."
-class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200"
-/>
-
+    {% if user.is_authenticated %}
+    <a href="{% url 'tiles:chat' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">
+        AI Chat
+        <span class="inline-block w-2 h-2 bg-green-500 rounded-full ml-0.5"></span>
+    </a>
+    <a href="{% url 'tiles:generate_image' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">Generate</a>
+    {% else %}
+    <a href="{% url 'accounts:login' %}?next={% url 'tiles:chat' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">
+        AI Chat
+        <span class="inline-block w-2 h-2 bg-green-500 rounded-full ml-0.5"></span>
+    </a>
+    <a href="{% url 'accounts:login' %}?next={% url 'tiles:generate_image' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">Generate</a>
+    {% endif %}
 </div>
 
 
-<button type="submit"
-class="ml-2 px-4 py-2.5 bg-brand-600 text-white rounded-xl">
-
-<iconify-icon icon="lucide:search"></iconify-icon>
-
-</button>
-
-</form>
-
+<!-- SEARCH BAR (CENTER) -->
+<div class="hidden md:flex flex-1 max-w-sm lg:max-w-md xl:max-w-lg">
+    <form method="GET" action="{% url 'tiles:tile_catalog' %}" class="w-full flex items-center">
+        <div class="relative w-full group">
+            <iconify-icon icon="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors"></iconify-icon>
+            <input
+                type="text"
+                name="q"
+                placeholder="Search tiles..."
+                class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50/80 focus:bg-white focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-sm"
+            />
+        </div>
+        <button type="submit" class="ml-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl transition-colors shadow-sm">
+            <iconify-icon icon="lucide:search" class="text-base"></iconify-icon>
+        </button>
+    </form>
 </div>
-
-
-
 
 
 <!-- DESKTOP RIGHT SIDE -->
+<div class="hidden sm:flex items-center gap-2 flex-shrink-0">
 
-<div class="hidden sm:flex items-center gap-3">
+    {% if user.is_authenticated %}
+
+    <!-- NOTIFICATION BELL -->
+    <div class="relative" id="notif-wrapper">
+        <button
+            id="notif-btn"
+            class="relative w-11 h-11 rounded-xl border border-slate-200 flex items-center justify-center hover:bg-slate-100 hover:border-slate-300 transition-all"
+        >
+            <iconify-icon icon="lucide:bell" class="text-lg text-slate-600"></iconify-icon>
+            <!-- UNREAD BADGE -->
+            <span id="notif-badge"
+                class="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                {{ unread_count|default:"0" }}
+            </span>
+            <!-- PULSE DOT (when unread > 0) -->
+            {% if unread_count|default:0 > 0 %}
+            <span class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping opacity-75"></span>
+            {% endif %}
+        </button>
+
+        <!-- NOTIFICATION DROPDOWN -->
+        <div id="notif-dropdown"
+            class="hidden absolute right-0 top-full mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-slate-200/80 overflow-hidden z-[9999]"
+        >
+            <!-- HEADER -->
+            <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/60">
+                <div class="flex items-center gap-2">
+                    <iconify-icon icon="lucide:bell-ring" class="text-brand-600"></iconify-icon>
+                    <h3 class="text-sm font-bold text-slate-800">Notifications</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if unread_count|default:0 > 0 %}
+                    <a href="{% url 'tiles:mark_all_notifications_read' %}"
+                       class="text-xs text-brand-600 hover:text-brand-700 font-semibold hover:underline">
+                        Mark all read
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'tiles:notifications' %}"
+                       class="text-xs text-slate-500 hover:text-slate-700 font-medium hover:underline">
+                        View all
+                    </a>
+                </div>
+            </div>
+
+            <!-- NOTIFICATION LIST -->
+            <div id="notif-list" class="max-h-[420px] overflow-y-auto divide-y divide-slate-100">
+
+                {% if notifications|default:""|length > 0 %}
+                    {% for notif in notifications %}
+                    <a href="{{ notif.get_absolute_url|default:'#' }}" 
+                       class="flex items-start gap-3 px-5 py-4 hover:bg-slate-50 transition-colors {% if not notif.is_read %}bg-brand-50/40 border-l-[3px] border-brand-500{% endif %}">
+
+                        <!-- ICON BASED ON TYPE -->
+                        <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5
+                            {% if notif.notif_type == 'image_generated' %}bg-emerald-100 text-emerald-600
+                            {% elif notif.notif_type == 'image_failed' %}bg-red-100 text-red-600
+                            {% elif notif.notif_type == 'download_ready' %}bg-blue-100 text-blue-600
+                            {% elif notif.notif_type == 'download_complete' %}bg-violet-100 text-violet-600
+                            {% else %}bg-slate-100 text-slate-600{% endif %}">
+                            <iconify-icon icon="
+                                {% if notif.notif_type == 'image_generated' %}lucide:image-plus
+                                {% elif notif.notif_type == 'image_failed' %}lucide:image-off
+                                {% elif notif.notif_type == 'download_ready' %}lucide:download-cloud
+                                {% elif notif.notif_type == 'download_complete' %}lucide:check-circle
+                                {% else %}lucide:bell{% endif %}
+                            " class="text-sm"></iconify-icon>
+                        </div>
+
+                        <!-- CONTENT -->
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm text-slate-800 leading-snug">
+                                {{ notif.message|truncatewords:18 }}
+                            </p>
+                            <p class="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                                <iconify-icon icon="lucide:clock" class="text-[10px]"></iconify-icon>
+                                {{ notif.created_at|timesince }} ago
+                            </p>
+                        </div>
+
+                        <!-- UNREAD DOT -->
+                        {% if not notif.is_read %}
+                        <span class="w-2.5 h-2.5 bg-brand-500 rounded-full flex-shrink-0 mt-2"></span>
+                        {% endif %}
+
+                    </a>
+                    {% endfor %}
+                {% else %}
+
+                <!-- EMPTY STATE -->
+                <div class="px-5 py-12 text-center">
+                    <div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                        <iconify-icon icon="lucide:bell-off" class="text-2xl text-slate-400"></iconify-icon>
+                    </div>
+                    <p class="text-sm font-semibold text-slate-700">No notifications yet</p>
+                    <p class="text-xs text-slate-400 mt-1 max-w-[220px] mx-auto">
+                        Your image generation & download alerts will appear here
+                    </p>
+                </div>
+
+                {% endif %}
+
+            </div>
+
+            <!-- FOOTER -->
+            {% if notifications|default:""|length > 0 %}
+            <div class="px-5 py-3 border-t border-slate-100 bg-slate-50/40">
+                <a href="{% url 'tiles:notifications' %}"
+                   class="block w-full text-center text-sm text-brand-600 hover:text-brand-700 font-semibold py-1.5 rounded-lg hover:bg-brand-50 transition-colors">
+                    View All Notifications
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 
 
-{% if user.is_authenticated %}
+    <!-- PROFILE -->
+    <a href="{% url 'accounts:profile' %}"
+       class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-100 transition-colors">
+        <div class="w-10 h-10 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+            {{ user.username|first|upper }}
+        </div>
+        <div class="hidden md:block">
+            <p class="text-sm font-semibold text-slate-800">{{ user.first_name|default:user.username }}</p>
+            <p class="text-xs text-slate-500">Profile</p>
+        </div>
+    </a>
 
 
+    <!-- LOGOUT -->
+    <a href="{% url 'accounts:logout' %}"
+       class="h-11 px-5 border border-slate-300 rounded-xl flex items-center gap-2 text-sm font-semibold hover:bg-slate-50 transition-colors">
+        <iconify-icon icon="lucide:log-out"></iconify-icon>
+        <span class="hidden lg:inline">Logout</span>
+    </a>
 
+    {% else %}
 
+    <!-- LOGIN -->
+    <a href="{% url 'accounts:login' %}"
+       class="h-11 px-5 border border-slate-300 rounded-xl flex items-center gap-2 text-sm font-semibold hover:bg-slate-50 transition-colors">
+        <iconify-icon icon="lucide:key-round"></iconify-icon>
+        <span class="hidden lg:inline">Login</span>
+    </a>
 
-<!-- PROFILE -->
+    <!-- REGISTER -->
+    <a href="{% url 'accounts:register' %}"
+       class="h-11 px-5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl flex items-center gap-2 text-sm font-semibold transition-colors shadow-sm">
+        <iconify-icon icon="lucide:user-plus"></iconify-icon>
+        <span class="hidden lg:inline">Register</span>
+    </a>
 
-
-<a href="{% url 'accounts:profile' %}"
-class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-100">
-
-
-<div class="w-10 h-10 rounded-full bg-brand-600 text-white flex items-center justify-center font-bold">
-
-{{ user.username|first|upper }}
+    {% endif %}
 
 </div>
-
-
-
-<div class="hidden md:block">
-
-<p class="text-sm font-semibold text-slate-800">
-
-{{ user.first_name|default:user.username }}
-
-</p>
-
-
-<p class="text-xs text-slate-500">
-
-Profile
-
-</p>
-
-</div>
-
-
-</a>
-
-
-
-
-<!-- LOGOUT -->
-
-<a href="{% url 'accounts:logout' %}"
-class="h-11 px-5 border border-slate-300 rounded-xl flex items-center gap-2 text-sm font-semibold hover:bg-slate-50">
-
-
-<iconify-icon icon="lucide:log-out"></iconify-icon>
-
-Logout
-
-</a>
-
-
-
-{% else %}
-
-
-
-
-<a href="{% url 'accounts:login' %}"
-class="h-11 px-5 border border-slate-300 rounded-xl flex items-center gap-2 text-sm font-semibold hover:bg-slate-50">
-
-
-<iconify-icon icon="lucide:key-round"></iconify-icon>
-
-Login
-
-</a>
-
-
-
-
-<a href="{% url 'accounts:register' %}"
-class="h-11 px-5 bg-emerald-600 text-white rounded-xl flex items-center gap-2 text-sm font-semibold">
-
-
-<iconify-icon icon="lucide:user-plus"></iconify-icon>
-
-Register
-
-</a>
-
-
-
-{% endif %}
-
-
-</div>
-
-
-
 
 
 <!-- MOBILE BUTTON -->
-
-<button id="mobile-btn"
-class="lg:hidden text-3xl text-slate-700">
-
-
-<iconify-icon icon="lucide:menu"></iconify-icon>
-
-
+<button id="mobile-btn" class="lg:hidden text-3xl text-slate-700 p-2 -mr-2">
+    <iconify-icon icon="lucide:menu"></iconify-icon>
 </button>
 
-
-
 </div>
-
-
-
-
 
 
 <!-- MOBILE MENU -->
+<div id="mobile-menu" class="hidden lg:hidden absolute top-20 left-0 right-0 bg-white shadow-xl border-t">
 
-<div id="mobile-menu"
-class="hidden lg:hidden absolute top-20 left-0 right-0 bg-white shadow-xl border-t">
+    <!-- MOBILE SEARCH -->
+    <div class="px-4 py-3 border-b border-slate-100">
+        <form method="GET" action="{% url 'tiles:tile_catalog' %}" class="flex items-center">
+            <div class="relative w-full">
+                <iconify-icon icon="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></iconify-icon>
+                <input
+                    type="text"
+                    name="q"
+                    placeholder="Search tiles..."
+                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+                />
+            </div>
+            <button type="submit" class="ml-2 px-4 py-2.5 bg-brand-600 text-white rounded-xl">
+                <iconify-icon icon="lucide:search"></iconify-icon>
+            </button>
+        </form>
+    </div>
 
+    <div class="px-4 py-4 space-y-1 max-h-[60vh] overflow-y-auto">
 
-<div class="px-5 py-5 space-y-2">
+        <a href="{% url 'tiles:home' %}" class="block px-4 py-3 rounded-lg hover:bg-slate-100 text-sm text-slate-700 font-medium transition-colors">Home</a>
+        <a href="{% url 'tiles:countries' %}" class="block px-4 py-3 rounded-lg hover:bg-slate-100 text-sm text-slate-700 font-medium transition-colors">Locations</a>
+        <a href="{% url 'tiles:tile_catalog' %}" class="block px-4 py-3 rounded-lg hover:bg-slate-100 text-sm text-slate-700 font-medium transition-colors">Tiles</a>
 
+        {% if user.is_authenticated %}
 
+        <!-- MOBILE NOTIFICATION LINK -->
+        <a href="{% url 'tiles:notifications' %}" class="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-slate-100 text-sm text-slate-700 font-medium transition-colors">
+            <span class="flex items-center gap-2">
+                <iconify-icon icon="lucide:bell" class="text-base"></iconify-icon>
+                Notifications
+            </span>
+            {% if unread_count|default:0 > 0 %}
+            <span class="min-w-[22px] h-[22px] px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {{ unread_count|default:"0" }}
+            </span>
+            {% endif %}
+        </a>
 
-<a href="{% url 'tiles:home' %}"
-class="block px-4 py-3 rounded-lg hover:bg-slate-100">
+        <a href="{% url 'tiles:chat' %}" class="flex items-center gap-2 px-4 py-3 rounded-lg hover:bg-slate-100 text-sm text-slate-700 font-medium transition-colors">
+            AI Chat
+            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+        </a>
+        <a href="{% url 'tiles:generate_image' %}" class="block px-4 py-3 rounded-lg hover:bg-slate-100 text-sm text-slate-700 font-medium transition-colors">Generate</a>
+        <a href="{% url 'accounts:profile' %}" class="block px-4 py-3 rounded-lg hover:bg-slate-100 text-sm text-slate-700 font-medium transition-colors">Profile</a>
 
-Home
+        <div class="pt-2 mt-2 border-t border-slate-100">
+            <a href="{% url 'accounts:logout' %}" class="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition-colors">
+                <iconify-icon icon="lucide:log-out"></iconify-icon>
+                Logout
+            </a>
+        </div>
 
-</a>
+        {% else %}
 
+        <a href="{% url 'accounts:login' %}?next={% url 'tiles:chat' %}" class="flex items-center gap-2 px-4 py-3 rounded-lg hover:bg-slate-100 text-sm text-slate-700 font-medium transition-colors">
+            AI Chat
+            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+        </a>
+        <a href="{% url 'accounts:login' %}?next={% url 'tiles:generate_image' %}" class="block px-4 py-3 rounded-lg hover:bg-slate-100 text-sm text-slate-700 font-medium transition-colors">Generate</a>
 
+        <div class="pt-2 mt-2 border-t border-slate-100 space-y-2">
+            <a href="{% url 'accounts:login' %}" class="flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-slate-300 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+                <iconify-icon icon="lucide:key-round"></iconify-icon>
+                Login
+            </a>
+            <a href="{% url 'accounts:register' %}" class="flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors">
+                <iconify-icon icon="lucide:user-plus"></iconify-icon>
+                Register
+            </a>
+        </div>
 
-<a href="{% url 'tiles:countries' %}"
-class="block px-4 py-3 rounded-lg hover:bg-slate-100">
+        {% endif %}
 
-Locations
-
-</a>
-
-
-
-
-<a href="{% url 'tiles:tile_catalog' %}"
-class="block px-4 py-3 rounded-lg hover:bg-slate-100">
-
-Tiles
-
-</a>
-
-
-
-
-{% if user.is_authenticated %}
-<a href="{% url 'tiles:chat' %}"
-class="block px-4 py-3 rounded-lg hover:bg-slate-100">
-AI Chat
-</a>
-
-<a href="{% url 'tiles:generate_image' %}"
-class="block px-4 py-3 rounded-lg hover:bg-slate-100">
-Generate
-</a>
-
-<a href="{% url 'accounts:profile' %}"
-class="block px-4 py-3 rounded-lg hover:bg-slate-100">
-Profile
-</a>
-
-<a href="{% url 'accounts:logout' %}"
-class="block px-4 py-3 rounded-lg bg-red-500 text-white">
-Logout
-</a>
-{% else %}
-<a href="{% url 'accounts:login' %}?next={% url 'tiles:chat' %}"
-class="block px-4 py-3 rounded-lg hover:bg-slate-100">
-AI Chat
-</a>
-
-<a href="{% url 'accounts:login' %}?next={% url 'tiles:generate_image' %}"
-class="block px-4 py-3 rounded-lg hover:bg-slate-100">
-Generate
-</a>
-
-<a href="{% url 'accounts:login' %}"
-class="block px-4 py-3 rounded-lg hover:bg-slate-100">
-Login
-</a>
-
-<a href="{% url 'accounts:register' %}"
-class="block px-4 py-3 rounded-lg bg-emerald-600 text-white">
-Register
-</a>
-{% endif %}
-
-
+    </div>
 </div>
-
-</div>
-
-
 
 </nav>
 
 
-
-
-
 <script>
+document.addEventListener("DOMContentLoaded", function() {
 
-document.addEventListener("DOMContentLoaded", function(){
+    // MOBILE MENU TOGGLE
+    const mobileBtn = document.getElementById("mobile-btn");
+    const mobileMenu = document.getElementById("mobile-menu");
 
-const btn = document.getElementById("mobile-btn");
+    if (mobileBtn && mobileMenu) {
+        mobileBtn.addEventListener("click", function() {
+            mobileMenu.classList.toggle("hidden");
+            // Swap icon
+            const icon = mobileBtn.querySelector("iconify-icon");
+            if (mobileMenu.classList.contains("hidden")) {
+                icon.setAttribute("icon", "lucide:menu");
+            } else {
+                icon.setAttribute("icon", "lucide:x");
+            }
+        });
+    }
 
-const menu = document.getElementById("mobile-menu");
+
+    // NOTIFICATION DROPDOWN TOGGLE
+    const notifBtn = document.getElementById("notif-btn");
+    const notifDropdown = document.getElementById("notif-dropdown");
+
+    if (notifBtn && notifDropdown) {
+        notifBtn.addEventListener("click", function(e) {
+            e.stopPropagation();
+            notifDropdown.classList.toggle("hidden");
+        });
+
+        // Close on outside click
+        document.addEventListener("click", function(e) {
+            if (!document.getElementById("notif-wrapper").contains(e.target)) {
+                notifDropdown.classList.add("hidden");
+            }
+        });
+
+        // Close on Escape
+        document.addEventListener("keydown", function(e) {
+            if (e.key === "Escape") {
+                notifDropdown.classList.add("hidden");
+                mobileMenu.classList.add("hidden");
+                const icon = mobileBtn?.querySelector("iconify-icon");
+                if (icon) icon.setAttribute("icon", "lucide:menu");
+            }
+        });
+    }
 
 
-if(btn && menu){
-
-btn.addEventListener("click", function(){
-
-menu.classList.toggle("hidden");
+    // CLOSE MOBILE MENU ON LINK CLICK
+    if (mobileMenu) {
+        mobileMenu.querySelectorAll("a").forEach(function(link) {
+            link.addEventListener("click", function() {
+                mobileMenu.classList.add("hidden");
+                const icon = mobileBtn?.querySelector("iconify-icon");
+                if (icon) icon.setAttribute("icon", "lucide:menu");
+            });
+        });
+    }
 
 });
-
-}
-
-});
-
-
 </script>
