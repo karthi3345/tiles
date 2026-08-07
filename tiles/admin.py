@@ -2,7 +2,8 @@ from django.contrib import admin
 from .models import (
     Country, State, City, Village,
     TileCategory, TileEffect, TileFinish, TileSize, TileProduct,
-    TileShowroom, MarketInsight, ChatSession, ChatMessage, GeneratedImage,UserProfile
+    TileShowroom, MarketInsight, ChatSession, ChatMessage, GeneratedImage,UserProfile,
+    Order, OrderItem, Payment,
 )
 
 
@@ -158,3 +159,28 @@ class GeneratedImageAdmin(admin.ModelAdmin):
 
 
 admin.site.register(UserProfile)
+
+
+# ── E-commerce admin ──────────────────────────────────────────
+
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 0
+    readonly_fields = ['tile_name', 'quantity', 'price', 'size_label', 'total']
+
+
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ['order_id', 'user', 'amount', 'status', 'customer_name', 'created_at']
+    list_filter = ['status', 'created_at']
+    search_fields = ['order_id', 'customer_name', 'customer_email', 'customer_phone']
+    readonly_fields = ['order_id', 'amount', 'currency', 'created_at', 'updated_at']
+    inlines = [OrderItemInline]
+
+
+@admin.register(Payment)
+class PaymentAdmin(admin.ModelAdmin):
+    list_display = ['razorpay_payment_id', 'order', 'amount', 'status', 'created_at']
+    list_filter = ['status', 'created_at']
+    search_fields = ['razorpay_payment_id', 'order__order_id']
+    readonly_fields = ['razorpay_payment_id', 'razorpay_signature', 'order', 'amount', 'created_at']

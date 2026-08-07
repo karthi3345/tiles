@@ -1,6 +1,6 @@
 import os
+import sys
 from dotenv import load_dotenv
-import cloudinary
 
 load_dotenv()
 
@@ -9,11 +9,16 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-studio-mathri-change-me-xyz')
 DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = [
-    "tiles-8o5p.vercel.app",
-    ".vercel.app",
-    "localhost",
-    "127.0.0.1",
+# Allow the workspace preview domain plus the original Vercel domain and localhost
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
+ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS if h.strip()] or [
+    "*",
+]
+
+# CSRF: trust the preview domain and https scheme
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if o.strip()
 ]
 
 INSTALLED_APPS = [
@@ -84,6 +89,8 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                  "tiles.context_processors.user_profile",
+                 "tiles.context_processors.notification_context",
+                 "tiles.context_processors.cart_context",
             ],
         },
     },
@@ -91,16 +98,31 @@ TEMPLATES = [
 
 
 
-import os
-import dj_database_url
-
+# Database — MySQL (workspace-provisioned)
+# PyMySQL is installed as the MySQL driver (see studiomathri/__init__.py for the shim)
 DATABASES = {
-    "default": dj_database_url.config(
-        default=os.environ.get("DATABASE_URL"),
-        conn_max_age=600,
-        ssl_require=True
-    )
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.environ.get("DB_NAME", os.environ.get("DATABASE_NAME")),
+        "USER": os.environ.get("DB_USER", os.environ.get("DATABASE_USER")),
+        "PASSWORD": os.environ.get("DB_PASSWORD", os.environ.get("DATABASE_PASSWORD")),
+        "HOST": os.environ.get("DB_HOST", os.environ.get("DATABASE_HOST", "127.0.0.1")),
+        "PORT": os.environ.get("DB_PORT", os.environ.get("DATABASE_PORT", "3306")),
+        "OPTIONS": {
+            "init_command": "SET sql_mode=STRICT_TRANS_TABLES, NAMES utf8mb4",
+            "charset": "utf8mb4",
+        },
+    }
 }
+
+# Use SQLite in-memory for tests (dev MySQL user lacks CREATE DATABASE privilege)
+if 'test' in sys.argv:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
+    }
 
 
 LANGUAGE_CODE = 'en-us'
@@ -130,11 +152,15 @@ WSGI_APPLICATION = 'studiomathri.wsgi.application'
 ASGI_APPLICATION = 'studiomathri.asgi.application'
 
 # Cloudinary Configuration (For manual uploads in views.py)
-cloudinary.config(
-    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
-    api_key=os.getenv("CLOUDINARY_API_KEY"),
-    api_secret=os.getenv("CLOUDINARY_API_SECRET")
-)
+# Only configure when credentials are present — the app runs fine without it
+# (image upload features will gracefully fail, but auth/home/catalog all work).
+if os.getenv("CLOUDINARY_CLOUD_NAME"):
+    import cloudinary
+    cloudinary.config(
+        cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+        api_key=os.getenv("CLOUDINARY_API_KEY"),
+        api_secret=os.getenv("CLOUDINARY_API_SECRET")
+    )
 
 
 

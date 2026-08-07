@@ -1,6 +1,7 @@
 import json
 import uuid
 import time
+import math
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -14,9 +15,12 @@ import cloudinary.uploader
 from .models import (
     Country, State, City, Village,
     TileCategory, TileEffect, TileFinish, TileSize, TileProduct,
-    MarketInsight, ChatSession, ChatMessage, GeneratedImage,Notification
+    MarketInsight, ChatSession, ChatMessage, GeneratedImage,Notification,
+    Order, OrderItem, Payment,
 )
 from .forms import ChatForm, ImageGenerateForm, TileSearchForm
+from .cart import Cart
+from .payment import create_razorpay_order, verify_payment_signature, get_razorpay_client
 from .services.ai_chat import chat_service
 from .services.image_gen import image_gen_service
 
@@ -485,6 +489,74 @@ def location_search(request):
     return JsonResponse({'results': results})
 
 
+# ─────────── NEAREST LOCATION API ───────────
+
+def _haversine_distance(lat1, lng1, lat2, lng2):
+    """Return the great-circle distance between two points in km (Haversine formula)."""
+    R = 6371  # Earth radius in km
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    d_phi = math.radians(lat2 - lat1)
+    d_lambda = math.radians(lng2 - lng1)
+    a = math.sin(d_phi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2) ** 2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def find_nearest_location(request):
+    """GET ?lat=X&lng=Y → nearest city with coordinates, or found=false."""
+    try:
+        lat = float(request.GET.get('lat', ''))
+        lng = float(request.GET.get('lng', ''))
+    except (ValueError, TypeError):
+        return JsonResponse(
+            {'found': False, 'error': 'Valid lat and lng parameters are required.'},
+            status=400,
+        )
+
+    if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
+        return JsonResponse(
+            {'found': False, 'error': 'Coordinates out of valid range.'},
+            status=400,
+        )
+
+    cities = City.objects.select_related('state__country').exclude(
+        latitude__isnull=True, longitude__isnull=True
+    )
+
+    if not cities.exists():
+        return JsonResponse(
+            {'found': False, 'error': 'No cities with coordinates available.'},
+            status=404,
+        )
+
+    nearest = None
+    nearest_dist = None
+    for city in cities:
+        dist = _haversine_distance(lat, lng, city.latitude, city.longitude)
+        if nearest_dist is None or dist < nearest_dist:
+            nearest = city
+            nearest_dist = dist
+
+    if nearest is None:
+        return JsonResponse({'found': False, 'error': 'No nearby city found.'}, status=404)
+
+    redirect_url = (
+        f'/locations/{nearest.state.country.slug}/'
+        f'{nearest.state.slug}/{nearest.slug}/'
+    )
+
+    return JsonResponse({
+        'found': True,
+        'city': nearest.name,
+        'state': nearest.state.name,
+        'country': nearest.state.country.name,
+        'country_slug': nearest.state.country.slug,
+        'state_slug': nearest.state.slug,
+        'city_slug': nearest.slug,
+        'redirect_url': redirect_url,
+        'distance_km': round(nearest_dist, 1),
+    })
+
 
 #-------------Download IMages----------------
 
@@ -597,3 +669,242 @@ def mark_all_notifications_read(request):
             user=request.user, is_read=False
         ).update(is_read=True)
     return redirect(request.META.get('HTTP_REFERER', '/'))
+
+
+# ─────────── SHOPPING CART ───────────
+
+def cart_detail(request):
+    """View the shopping cart page."""
+    cart = Cart(request)
+    breadcrumbs = _build_breadcrumbs([
+        ('Home', '/'),
+        ('Cart', None),
+    ])
+    return render(request, 'tiles/cart/cart.html', {
+        'cart': cart,
+        'breadcrumbs': breadcrumbs,
+    })
+
+
+@require_POST
+def cart_add(request, tile_id):
+    """Add a tile to the cart. Accepts quantity and optional size_label."""
+    tile = get_object_or_404(TileProduct, id=tile_id, is_active=True)
+    quantity = int(request.POST.get('quantity', 1))
+    size_label = request.POST.get('size_label', '')
+
+    cart = Cart(request)
+    cart.add(tile_id=tile.id, quantity=quantity, size_label=size_label)
+
+    messages.success(request, f'Added "{tile.name}" to cart.')
+
+    # If 'buy_now' is set, redirect to checkout
+    if request.POST.get('buy_now'):
+        return redirect('tiles:checkout')
+
+    return redirect(request.META.get('HTTP_REFERER', 'tiles:cart_detail'))
+
+
+@require_POST
+def cart_update(request, tile_id):
+    """Update quantity of a cart item."""
+    quantity = int(request.POST.get('quantity', 1))
+    size_label = request.POST.get('size_label', '')
+    cart = Cart(request)
+    cart.update_quantity(tile_id=tile_id, quantity=quantity, size_label=size_label)
+    messages.success(request, 'Cart updated.')
+    return redirect('tiles:cart_detail')
+
+
+@require_POST
+def cart_remove(request, tile_id):
+    """Remove a tile from the cart."""
+    size_label = request.POST.get('size_label', '')
+    cart = Cart(request)
+    cart.remove(tile_id=tile_id, size_label=size_label)
+    messages.success(request, 'Item removed from cart.')
+    return redirect('tiles:cart_detail')
+
+
+# ─────────── CHECKOUT & PAYMENT ───────────
+
+@login_required(login_url='accounts:login')
+def checkout(request):
+    """
+    Checkout page: shows cart summary, collects shipping info,
+    and triggers Razorpay Checkout.js.
+    """
+    cart = Cart(request)
+
+    if len(cart) == 0:
+        messages.warning(request, 'Your cart is empty.')
+        return redirect('tiles:tile_catalog')
+
+    total = cart.get_total_price()
+
+    # Pre-fill from user profile if available
+    initial = {
+        'customer_name': request.user.get_full_name() or request.user.username,
+        'customer_email': request.user.email,
+    }
+
+    # Handle Razorpay order creation on POST
+    razorpay_order = None
+    if request.method == 'POST':
+        customer_name = request.POST.get('customer_name', '').strip()
+        customer_email = request.POST.get('customer_email', '').strip()
+        customer_phone = request.POST.get('customer_phone', '').strip()
+        shipping_address = request.POST.get('shipping_address', '').strip()
+
+        if not all([customer_name, customer_email, customer_phone, shipping_address]):
+            messages.error(request, 'Please fill in all shipping details.')
+        else:
+            amount_paise = int(total * 100)  # ₹ → paise
+            try:
+                razorpay_order = create_razorpay_order(
+                    amount_paise=amount_paise,
+                    receipt=f'order_{request.user.id}_{int(time.time())}'
+                )
+                # Store shipping info + razorpay order id in session for verification step
+                request.session['checkout'] = {
+                    'order_id': razorpay_order['id'],
+                    'amount': str(total),
+                    'customer_name': customer_name,
+                    'customer_email': customer_email,
+                    'customer_phone': customer_phone,
+                    'shipping_address': shipping_address,
+                }
+            except Exception as e:
+                messages.error(request, f'Payment gateway error: {str(e)}')
+
+    breadcrumbs = _build_breadcrumbs([
+        ('Home', '/'),
+        ('Cart', '/cart/'),
+        ('Checkout', None),
+    ])
+
+    import os
+    return render(request, 'tiles/cart/checkout.html', {
+        'cart': cart,
+        'total': total,
+        'initial': initial,
+        'razorpay_order': razorpay_order,
+        'razorpay_key_id': os.getenv('RAZORPAY_KEY_ID', ''),
+        'breadcrumbs': breadcrumbs,
+    })
+
+
+@require_POST
+@login_required(login_url='accounts:login')
+def payment_verify(request):
+    """
+    Verify Razorpay payment after Checkout.js success callback.
+    Creates Order, OrderItems, Payment records.
+    """
+    razorpay_payment_id = request.POST.get('razorpay_payment_id', '')
+    razorpay_order_id = request.POST.get('razorpay_order_id', '')
+    razorpay_signature = request.POST.get('razorpay_signature', '')
+
+    checkout_data = request.session.get('checkout', {})
+
+    if not checkout_data or checkout_data.get('order_id') != razorpay_order_id:
+        messages.error(request, 'Session expired or invalid order. Please try again.')
+        return redirect('tiles:cart_detail')
+
+    # Verify signature
+    try:
+        verify_payment_signature(
+            razorpay_order_id, razorpay_payment_id, razorpay_signature
+        )
+    except Exception:
+        # Payment verification failed — record failure
+        order = Order.objects.create(
+            user=request.user,
+            order_id=razorpay_order_id,
+            amount=checkout_data.get('amount', 0),
+            customer_name=checkout_data.get('customer_name', ''),
+            customer_email=checkout_data.get('customer_email', ''),
+            customer_phone=checkout_data.get('customer_phone', ''),
+            shipping_address=checkout_data.get('shipping_address', ''),
+            status='failed',
+        )
+        Payment.objects.create(
+            order=order,
+            razorpay_payment_id=razorpay_payment_id,
+            razorpay_signature=razorpay_signature,
+            amount=order.amount,
+            status='failed',
+        )
+        return redirect('tiles:payment_failed')
+
+    # Signature verified — save order
+    from decimal import Decimal
+    cart = Cart(request)
+
+    order = Order.objects.create(
+        user=request.user,
+        order_id=razorpay_order_id,
+        amount=Decimal(checkout_data.get('amount', 0)),
+        customer_name=checkout_data.get('customer_name', ''),
+        customer_email=checkout_data.get('customer_email', ''),
+        customer_phone=checkout_data.get('customer_phone', ''),
+        shipping_address=checkout_data.get('shipping_address', ''),
+        status='paid',
+    )
+
+    # Create order items from cart
+    for item in cart:
+        OrderItem.objects.create(
+            order=order,
+            tile=item['tile'],
+            tile_name=item['tile'].name,
+            quantity=item['quantity'],
+            price=item['price'],
+            size_label=item.get('size_label', ''),
+        )
+
+    Payment.objects.create(
+        order=order,
+        razorpay_payment_id=razorpay_payment_id,
+        razorpay_signature=razorpay_signature,
+        amount=order.amount,
+        status='success',
+    )
+
+    # Clear cart + checkout session
+    cart.clear()
+    if 'checkout' in request.session:
+        del request.session['checkout']
+
+    request.session['last_order_id'] = order.id
+    return redirect('tiles:payment_success')
+
+
+def payment_success(request):
+    """Payment success page."""
+    order_id = request.session.pop('last_order_id', None)
+    order = None
+    if order_id:
+        order = Order.objects.filter(id=order_id).first()
+    return render(request, 'tiles/cart/payment_success.html', {'order': order})
+
+
+def payment_failed(request):
+    """Payment failure page."""
+    return render(request, 'tiles/cart/payment_failed.html')
+
+
+# ─────────── ORDER HISTORY ───────────
+
+@login_required(login_url='accounts:login')
+def order_history(request):
+    """List all paid/failed orders for the current user."""
+    orders = Order.objects.filter(user=request.user).prefetch_related('items')
+    breadcrumbs = _build_breadcrumbs([
+        ('Home', '/'),
+        ('My Orders', None),
+    ])
+    return render(request, 'tiles/cart/orders.html', {
+        'orders': orders,
+        'breadcrumbs': breadcrumbs,
+    })

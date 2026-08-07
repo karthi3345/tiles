@@ -39,6 +39,53 @@
     </div>
 </section>
 
+<!-- Live Location Detection -->
+<section class="py-12 bg-gradient-to-b from-slate-950 to-slate-900">
+    <div class="max-w-2xl mx-auto px-4 sm:px-6">
+        <div id="location-card" class="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-8 text-center">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-brand-600/20 flex items-center justify-center mb-5">
+                <iconify-icon icon="lucide:map-pin" class="text-3xl text-brand-400"></iconify-icon>
+            </div>
+            <h3 class="text-2xl font-bold text-white mb-2">Enable Live Location</h3>
+            <p class="text-slate-400 text-sm mb-6">Allow location access to find services near you.</p>
+
+            <!-- Default state -->
+            <div id="loc-state-default">
+                <button id="allow-location-btn" class="inline-flex items-center gap-2 px-8 py-3.5 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl shadow-lg shadow-brand-600/30 hover:shadow-brand-600/50 transition-all">
+                    <iconify-icon icon="lucide:navigation" class="text-lg"></iconify-icon>
+                    Allow Location
+                </button>
+            </div>
+
+            <!-- Loading state -->
+            <div id="loc-state-loading" class="hidden">
+                <div class="inline-flex items-center gap-3 px-8 py-3.5 bg-white/10 text-white text-sm font-semibold rounded-xl">
+                    <svg class="animate-spin h-5 w-5 text-brand-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    Detecting your location…
+                </div>
+            </div>
+
+            <!-- Error message -->
+            <div id="loc-state-error" class="hidden">
+                <p id="loc-error-text" class="text-sm text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3"></p>
+                <button onclick="locationCard.reset()" class="mt-4 text-sm font-medium text-brand-400 hover:text-brand-300 transition-colors">Try again</button>
+            </div>
+
+            <!-- Success message -->
+            <div id="loc-state-success" class="hidden">
+                <div class="inline-flex items-center gap-2 text-emerald-400 text-sm font-semibold mb-2">
+                    <iconify-icon icon="lucide:check-circle" class="text-lg"></iconify-icon>
+                    <span id="loc-success-text">Location found!</span>
+                </div>
+                <p id="loc-redirect-text" class="text-xs text-slate-400">Redirecting…</p>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- Stats -->
 <section class="bg-slate-950 border-y border-slate-800">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -177,4 +224,93 @@
 
 
 
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const locationCard = {
+    states: ['default', 'loading', 'error', 'success'],
+
+    showState(name) {
+        this.states.forEach(s => {
+            const el = document.getElementById('loc-state-' + s);
+            if (el) el.classList.toggle('hidden', s !== name);
+        });
+    },
+
+    showError(message) {
+        const el = document.getElementById('loc-error-text');
+        if (el) el.textContent = message;
+        this.showState('error');
+    },
+
+    showSuccess(message) {
+        const el = document.getElementById('loc-success-text');
+        if (el) el.textContent = message;
+        this.showState('success');
+    },
+
+    reset() {
+        this.showState('default');
+    },
+
+    async detect() {
+        if (!navigator.geolocation) {
+            this.showError('Your browser does not support location detection.');
+            return;
+        }
+
+        this.showState('loading');
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                try {
+                    const resp = await fetch(`/api/find-nearest/?lat=${lat}&lng=${lng}`);
+                    const data = await resp.json();
+
+                    if (data.found) {
+                        this.showSuccess(
+                            `Nearest tile hub: ${data.city}, ${data.country} (${data.distance_km} km away)`
+                        );
+                        const redirectEl = document.getElementById('loc-redirect-text');
+                        if (redirectEl) redirectEl.textContent = 'Redirecting to your area…';
+                        setTimeout(() => { window.location.href = data.redirect_url; }, 1500);
+                    } else {
+                        this.showError(data.error || 'No nearby service area found. Browse locations manually.');
+                    }
+                } catch (err) {
+                    this.showError('Could not reach the server. Please try again.');
+                }
+            },
+            (error) => {
+                let msg;
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        msg = 'Location access is required to find nearby services. You can enable it from your browser settings.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        msg = 'Unable to determine your location. Please try again.';
+                        break;
+                    case error.TIMEOUT:
+                        msg = 'Location request timed out. Please try again.';
+                        break;
+                    default:
+                        msg = 'An unknown error occurred while detecting your location.';
+                }
+                this.showError(msg);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0,
+            }
+        );
+    }
+};
+
+document.getElementById('allow-location-btn')?.addEventListener('click', () => locationCard.detect());
+</script>
 {% endblock %}

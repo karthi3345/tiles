@@ -418,3 +418,84 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.notif_type} — {self.user.username}"
+
+
+# ─────────── E-COMMERCE: ORDERS & PAYMENTS ───────────
+
+
+class Order(models.Model):
+    """Represents a customer order — created at checkout, linked to a Razorpay order."""
+
+    STATUS_CHOICES = [
+        ('created', 'Created'),
+        ('paid', 'Paid'),
+        ('failed', 'Failed'),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='orders'
+    )
+    order_id = models.CharField(max_length=100, unique=True, help_text="Razorpay order ID")
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    currency = models.CharField(max_length=10, default='INR')
+
+    # Shipping info captured at checkout
+    customer_name = models.CharField(max_length=200, blank=True)
+    customer_email = models.EmailField(blank=True)
+    customer_phone = models.CharField(max_length=20, blank=True)
+    shipping_address = models.TextField(blank=True)
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='created')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Order {self.order_id} — {self.status}"
+
+    @property
+    def total_items(self):
+        return sum(item.quantity for item in self.items.all())
+
+
+class OrderItem(models.Model):
+    """Line item in an order — snapshots the tile price at purchase time."""
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
+    tile = models.ForeignKey(TileProduct, on_delete=models.SET_NULL, null=True, blank=True)
+    tile_name = models.CharField(max_length=300, help_text="Snapshot of tile name")
+    quantity = models.PositiveIntegerField(default=1)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    size_label = models.CharField(max_length=50, blank=True)
+
+    @property
+    def total(self):
+        return self.price * self.quantity
+
+    def __str__(self):
+        return f"{self.tile_name} x{self.quantity}"
+
+
+class Payment(models.Model):
+    """Records the Razorpay payment transaction for an order."""
+
+    PAYMENT_STATUS = [
+        ('success', 'Success'),
+        ('failed', 'Failed'),
+    ]
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='payments')
+    razorpay_payment_id = models.CharField(max_length=100, blank=True)
+    razorpay_signature = models.CharField(max_length=300, blank=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    status = models.CharField(max_length=20, choices=PAYMENT_STATUS, default='success')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Payment {self.razorpay_payment_id} — {self.status}"

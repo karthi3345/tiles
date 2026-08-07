@@ -1,0 +1,27 @@
+{% extends 'tiles/base.html' %}
+{% block title %}Payment Failed{% endblock %}
+
+{% block content %}
+<section class="pt-28 pb-24 bg-slate-50 min-h-screen">
+    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-2xl border border-slate-200/60 p-12 text-center">
+            <div class="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-6">
+                <iconify-icon icon="lucide:x-circle" class="text-5xl text-red-600"></iconify-icon>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-900 mb-2">Payment Failed</h1>
+            <p class="text-sm text-slate-500 mb-8">We couldn't process your payment. No charges were made. Please try again.</p>
+
+            <div class="flex items-center justify-center gap-3">
+                <a href="{% url 'tiles:checkout' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-colors">
+                    <iconify-icon icon="lucide:refresh-cw"></iconify-icon>
+                    Try Again
+                </a>
+                <a href="{% url 'tiles:cart_detail' %}" class="inline-flex items-center gap-2 px-6 py-3 border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-xl transition-colors">
+                    <iconify-icon icon="lucide:shopping-cart"></iconify-icon>
+                    Back to Cart
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

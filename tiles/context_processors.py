@@ -1,12 +1,11 @@
 from .models import Notification
+from .cart import Cart
 
 def notification_context(request):
     if request.user.is_authenticated:
-        notifications = Notification.objects.filter(
-            user=request.user
-        ).order_by("-created_at")[:10]
-
-        unread_count = notifications.filter(is_read=False).count()
+        qs = Notification.objects.filter(user=request.user)
+        unread_count = qs.filter(is_read=False).count()
+        notifications = qs.order_by("-created_at")[:10]
 
         return {
             "notifications": notifications,
@@ -16,6 +15,14 @@ def notification_context(request):
     return {
         "notifications": [],
         "unread_count": 0,
+    }
+
+
+def cart_context(request):
+    """Provide cart item count to all templates (navbar badge)."""
+    cart = Cart(request)
+    return {
+        "cart_item_count": len(cart),
     }
 
 

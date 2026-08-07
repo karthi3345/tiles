@@ -34,37 +34,48 @@
         {% if tiles %}
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {% for tile in tiles %}
-            <a href="{% url 'tiles:tile_detail' slug=tile.slug %}" class="group bg-white rounded-2xl border border-slate-200/60 overflow-hidden hover:border-brand-200 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300">
-                <div class="aspect-[4/3] bg-slate-100 relative overflow-hidden">
-                    {% if tile.image %}
-                    <img src="{{ tile.image }}" alt="{{ tile.name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy">
-                    {% else %}
-                    <div class="w-full h-full flex flex-col items-center justify-center text-slate-300">
-                        <iconify-icon icon="lucide:image" class="text-4xl mb-2"></iconify-icon>
-                        <span class="text-[10px] font-medium uppercase tracking-wider">No design yet</span>
-                    </div>
-                    {% endif %}
-                    <div class="absolute top-2 left-2 flex flex-wrap gap-1">
-                        <span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full {% if tile.category.tile_type == 'floor' %}bg-slate-900 text-white{% elif tile.category.tile_type == 'wall' %}bg-brand-600 text-white{% elif tile.category.tile_type == 'special' %}bg-amber-600 text-white{% else %}bg-emerald-600 text-white{% endif %}">{{ tile.category.get_tile_type_display }}</span>
-                        {% if tile.is_featured %}
-                        <span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500 text-white">Featured</span>
+            <div class="group bg-white rounded-2xl border border-slate-200/60 overflow-hidden hover:border-brand-200 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 flex flex-col">
+                <a href="{% url 'tiles:tile_detail' slug=tile.slug %}" class="block">
+                    <div class="aspect-[4/3] bg-slate-100 relative overflow-hidden">
+                        {% if tile.image %}
+                        <img src="{{ tile.image }}" alt="{{ tile.name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" loading="lazy">
+                        {% else %}
+                        <div class="w-full h-full flex flex-col items-center justify-center text-slate-300">
+                            <iconify-icon icon="lucide:image" class="text-4xl mb-2"></iconify-icon>
+                            <span class="text-[10px] font-medium uppercase tracking-wider">No design yet</span>
+                        </div>
                         {% endif %}
+                        <div class="absolute top-2 left-2 flex flex-wrap gap-1">
+                            <span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full {% if tile.category.tile_type == 'floor' %}bg-slate-900 text-white{% elif tile.category.tile_type == 'wall' %}bg-brand-600 text-white{% elif tile.category.tile_type == 'special' %}bg-amber-600 text-white{% else %}bg-emerald-600 text-white{% endif %}">{{ tile.category.get_tile_type_display }}</span>
+                            {% if tile.is_featured %}
+                            <span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500 text-white">Featured</span>
+                            {% endif %}
+                        </div>
                     </div>
-                </div>
-                <div class="p-5">
-                    <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">{{ tile.category.name }}</p>
-                    <h3 class="text-sm font-semibold text-slate-900 group-hover:text-brand-600 transition-colors line-clamp-2 leading-tight mb-2">{{ tile.name }}</h3>
+                </a>
+                <div class="p-5 flex-1 flex flex-col">
+                    <a href="{% url 'tiles:tile_detail' slug=tile.slug %}">
+                        <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">{{ tile.category.name }}</p>
+                        <h3 class="text-sm font-semibold text-slate-900 group-hover:text-brand-600 transition-colors line-clamp-2 leading-tight mb-2">{{ tile.name }}</h3>
+                    </a>
                     <div class="flex flex-wrap gap-1 mb-3">
                         {% for eff in tile.effects.all|slice:":3" %}
                         <span class="text-[9px] text-slate-500 bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded">{{ eff.name }}</span>
                         {% endfor %}
                     </div>
-                    <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+                    <div class="flex items-center justify-between pt-3 border-t border-slate-100 mt-auto">
                         <span class="text-sm font-bold text-brand-600">{{ tile.price_display }}</span>
                         <span class="text-[10px] text-slate-400">{{ tile.material }}</span>
                     </div>
+                    <form method="post" action="{% url 'tiles:cart_add' tile_id=tile.id %}" class="mt-3">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full px-3 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5">
+                            <iconify-icon icon="lucide:shopping-cart" class="text-sm"></iconify-icon>
+                            Add to Cart
+                        </button>
+                    </form>
                 </div>
-            </a>
+            </div>
             {% endfor %}
         </div>
         {% else %}

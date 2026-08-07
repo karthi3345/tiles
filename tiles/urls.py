@@ -28,13 +28,29 @@ urlpatterns = [
 
     # Search API
     path('api/location-search/', views.location_search, name='location_search'),
+    path('api/find-nearest/', views.find_nearest_location, name='find_nearest_location'),
     path(
     "download/<int:pk>/",
     views.download_generated_image,
     name="download_generated_image",
 ),
-path('notifications/', views.NotificationListView.as_view(), name='notifications'),
-path('notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+    path('notifications/', views.NotificationListView.as_view(), name='notifications'),
+    path('notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+
+    # Shopping Cart
+    path('cart/', views.cart_detail, name='cart_detail'),
+    path('cart/add/<int:tile_id>/', views.cart_add, name='cart_add'),
+    path('cart/update/<int:tile_id>/', views.cart_update, name='cart_update'),
+    path('cart/remove/<int:tile_id>/', views.cart_remove, name='cart_remove'),
+
+    # Checkout & Payment
+    path('checkout/', views.checkout, name='checkout'),
+    path('payment/verify/', views.payment_verify, name='payment_verify'),
+    path('payment/success/', views.payment_success, name='payment_success'),
+    path('payment/failed/', views.payment_failed, name='payment_failed'),
+
+    # Order History
+    path('orders/', views.order_history, name='order_history'),
 
     
 ]
