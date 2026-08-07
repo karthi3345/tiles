@@ -14,12 +14,17 @@ ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
 ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS if h.strip()] or [
     "*",
 ]
+# Always allow the Vercel deployment domain
+if "tiles-sigma.vercel.app" not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append("tiles-sigma.vercel.app")
 
 # CSRF: trust the preview domain and https scheme
 CSRF_TRUSTED_ORIGINS = [
     o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
     if o.strip()
 ]
+# Always trust the Vercel deployment origin
+CSRF_TRUSTED_ORIGINS.append("https://tiles-sigma.vercel.app")
 
 INSTALLED_APPS = [
     'django.contrib.admin',
