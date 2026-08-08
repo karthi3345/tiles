@@ -55,13 +55,23 @@ mobileBtn.addEventListener("click",()=>{
     {% include 'tiles/components/navbar.html' %}
 
     {% if messages %}
-    <div class="fixed top-20 right-4 z-50 flex flex-col gap-2 max-w-sm">
+    <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 max-w-sm">
         {% for message in messages %}
-        <div class="px-5 py-3 rounded-xl text-sm font-medium shadow-lg flex items-center gap-2 {% if message.tags == 'success' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% elif message.tags == 'warning' %}bg-amber-50 text-amber-700 border border-amber-200{% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+        <div class="toast-item px-5 py-3 rounded-xl text-sm font-medium shadow-lg flex items-center gap-2 {% if message.tags == 'success' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% elif message.tags == 'warning' %}bg-amber-50 text-amber-700 border border-amber-200{% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
             <span>{{ message }}</span>
         </div>
         {% endfor %}
     </div>
+    <script>
+    setTimeout(() => {
+        document.querySelectorAll('.toast-item').forEach(el => {
+            el.style.transition = 'opacity 0.4s, transform 0.4s';
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(-10px)';
+            setTimeout(() => el.remove(), 400);
+        });
+    }, 4000);
+    </script>
     {% endif %}
 
     <main>

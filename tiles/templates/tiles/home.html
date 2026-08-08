@@ -312,19 +312,5 @@ const locationCard = {
 };
 
 document.getElementById('allow-location-btn')?.addEventListener('click', () => locationCard.detect());
-
-// Auto-detect on page load (browser will prompt for permission if not already granted)
-(function autoDetect() {
-    if (!navigator.geolocation) return;
-
-    navigator.permissions.query({ name: 'geolocation' }).then(result => {
-        // Only auto-detect if permission was already granted — never surprise the user with a prompt
-        if (result.state === 'granted') {
-            locationCard.detect();
-        }
-    }).catch(() => {
-        // permissions API not supported — do nothing, user can click the button
-    });
-})();
 </script>
 {% endblock %}
