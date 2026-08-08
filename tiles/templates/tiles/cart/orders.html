@@ -17,7 +17,7 @@
                         <p class="text-sm font-mono text-slate-500">{{ order.order_id }}</p>
                         <p class="text-xs text-slate-400">{{ order.created_at|date:"M d, Y · H:i" }}</p>
                     </div>
-                    <span class="text-xs font-bold px-3 py-1 rounded-full {% if order.status == 'paid' %}bg-emerald-100 text-emerald-700{% else %}bg-red-100 text-red-700{% endif %}">
+                    <span class="text-xs font-bold px-3 py-1 rounded-full {% if order.status == 'paid' %}bg-emerald-100 text-emerald-700{% elif order.status == 'shipped' %}bg-blue-100 text-blue-700{% elif order.status == 'delivered' %}bg-violet-100 text-violet-700{% else %}bg-red-100 text-red-700{% endif %}">
                         {{ order.status|upper }}
                     </span>
                 </div>

@@ -3,7 +3,10 @@ from decimal import Decimal
 from unittest.mock import patch, MagicMock
 from django.test import TestCase, Client, RequestFactory
 from django.contrib.auth.models import User
-from tiles.models import City, Country, State, TileCategory, TileProduct, Order, OrderItem, Payment
+from tiles.models import (
+    City, Country, State, TileCategory, TileProduct,
+    Order, OrderItem, Payment, Notification,
+)
 from tiles.views import _haversine_distance
 from tiles.cart import Cart
 
@@ -445,3 +448,196 @@ class CheckoutFlowTest(TestCase):
         resp = self.client.get('/orders/')
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, 'order_hist001')
+
+
+# ─────────── NOTIFICATION TESTS ───────────
+
+
+class NotificationEventTest(TestCase):
+    """Tests that Notification records are created for login, logout,
+    register, purchase success, and payment failure."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='notifuser@test.com', password='TestPass123!',
+            email='notifuser@test.com', first_name='Notif User',
+        )
+        self.category = TileCategory.objects.create(name='Ceramic', slug='ceramic-notif')
+        self.tile = TileProduct.objects.create(
+            name='Ceramic White', slug='ceramic-white-notif',
+            category=self.category, price_range_min=Decimal('150.00'),
+        )
+
+    # ── Login ──
+    def test_login_creates_notification(self):
+        self.client.login(username='notifuser@test.com', password='TestPass123!')
+        notifs = Notification.objects.filter(user=self.user)
+        self.assertEqual(notifs.count(), 0)  # client.login() doesn't go through the view
+
+    def test_login_view_creates_notification(self):
+        resp = self.client.post('/accounts/login/', {
+            'email': 'notifuser@test.com',
+            'password': 'TestPass123!',
+        })
+        self.assertEqual(resp.status_code, 302)
+        notif = Notification.objects.filter(
+            user=self.user, notif_type='general'
+        ).first()
+        self.assertIsNotNone(notif)
+        self.assertIn('Welcome back', notif.message)
+
+    # ── Logout ──
+    def test_logout_creates_notification(self):
+        self.client.login(username='notifuser@test.com', password='TestPass123!')
+        # Clear the login notification from login_view if any
+        Notification.objects.all().delete()
+        resp = self.client.get('/accounts/logout/')
+        self.assertEqual(resp.status_code, 302)
+        notif = Notification.objects.filter(user=self.user).first()
+        self.assertIsNotNone(notif)
+        self.assertIn('logged out', notif.message)
+
+    # ── Register ──
+    def test_register_creates_notification(self):
+        resp = self.client.post('/accounts/register/', {
+            'full_name': 'New User',
+            'email': 'newuser@test.com',
+            'password1': 'NewPass123!',
+            'password2': 'NewPass123!',
+        })
+        self.assertEqual(resp.status_code, 302)
+        new_user = User.objects.get(email='newuser@test.com')
+        notif = Notification.objects.filter(user=new_user).first()
+        self.assertIsNotNone(notif)
+        self.assertIn('Welcome to Studio Mathri', notif.message)
+
+    # ── Payment success ──
+    @patch('tiles.views.verify_payment_signature')
+    def test_payment_success_creates_notification(self, mock_verify):
+        mock_verify.return_value = True
+        self.client.login(username='notifuser@test.com', password='TestPass123!')
+        self.client.post(f'/cart/add/{self.tile.id}/', {'quantity': 2})
+
+        session = self.client.session
+        session['checkout'] = {
+            'order_id': 'order_notif_succ',
+            'amount': '300.00',
+            'customer_name': 'Notif User',
+            'customer_email': 'notifuser@test.com',
+            'customer_phone': '9876543210',
+            'shipping_address': '123 Main St',
+        }
+        session.save()
+
+        resp = self.client.post('/payment/verify/', {
+            'razorpay_payment_id': 'pay_notif_succ',
+            'razorpay_order_id': 'order_notif_succ',
+            'razorpay_signature': 'valid_sig',
+        })
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/payment/success/', resp.url)
+
+        notif = Notification.objects.filter(
+            user=self.user, message__contains='order_notif_succ'
+        ).first()
+        self.assertIsNotNone(notif)
+        self.assertIn('placed successfully', notif.message)
+
+    # ── Payment failure ──
+    @patch('tiles.views.verify_payment_signature')
+    def test_payment_failure_creates_notification(self, mock_verify):
+        mock_verify.side_effect = Exception('Signature mismatch')
+        self.client.login(username='notifuser@test.com', password='TestPass123!')
+        self.client.post(f'/cart/add/{self.tile.id}/', {'quantity': 1})
+
+        session = self.client.session
+        session['checkout'] = {
+            'order_id': 'order_notif_fail',
+            'amount': '150.00',
+            'customer_name': 'Notif User',
+            'customer_email': 'notifuser@test.com',
+            'customer_phone': '9876543210',
+            'shipping_address': '123 Main St',
+        }
+        session.save()
+
+        resp = self.client.post('/payment/verify/', {
+            'razorpay_payment_id': 'pay_notif_fail',
+            'razorpay_order_id': 'order_notif_fail',
+            'razorpay_signature': 'bad_sig',
+        })
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/payment/failed/', resp.url)
+
+        notif = Notification.objects.filter(
+            user=self.user, message__contains='order_notif_fail'
+        ).first()
+        self.assertIsNotNone(notif)
+        self.assertIn('failed', notif.message)
+
+
+class OrderDeliveryNotificationTest(TestCase):
+    """Tests that delivery notifications are created when order status changes."""
+
+    def setUp(self):
+        self.client = Client()
+        self.customer = User.objects.create_user(
+            username='customer@test.com', password='TestPass123!',
+            email='customer@test.com', first_name='Customer',
+        )
+        self.staff = User.objects.create_user(
+            username='staff@test.com', password='StaffPass123!',
+            email='staff@test.com', first_name='Staff', is_staff=True,
+        )
+        self.category = TileCategory.objects.create(name='Ceramic', slug='ceramic-deliv')
+        self.tile = TileProduct.objects.create(
+            name='Deliver Tile', slug='deliver-tile',
+            category=self.category, price_range_min=Decimal('150.00'),
+        )
+        self.order = Order.objects.create(
+            user=self.customer,
+            order_id='order_deliv_001',
+            amount=Decimal('300.00'),
+            customer_name='Customer',
+            customer_email='customer@test.com',
+            customer_phone='9876543210',
+            shipping_address='123 Main St',
+            status='paid',
+        )
+
+    def test_shipped_creates_notification(self):
+        self.client.login(username='staff@test.com', password='StaffPass123!')
+        resp = self.client.post(f'/orders/{self.order.id}/update-status/', {'status': 'shipped'})
+        self.assertEqual(resp.status_code, 302)
+        notif = Notification.objects.filter(
+            user=self.customer, message__contains='shipped'
+        ).first()
+        self.assertIsNotNone(notif)
+        self.assertIn(self.order.order_id, notif.message)
+
+    def test_delivered_creates_notification(self):
+        self.client.login(username='staff@test.com', password='StaffPass123!')
+        resp = self.client.post(f'/orders/{self.order.id}/update-status/', {'status': 'delivered'})
+        self.assertEqual(resp.status_code, 302)
+        notif = Notification.objects.filter(
+            user=self.customer, message__contains='delivered'
+        ).first()
+        self.assertIsNotNone(notif)
+        self.assertIn(self.order.order_id, notif.message)
+
+    def test_non_staff_cannot_update_status(self):
+        self.client.login(username='customer@test.com', password='TestPass123!')
+        resp = self.client.post(f'/orders/{self.order.id}/update-status/', {'status': 'shipped'})
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, 'paid')  # unchanged
+
+    def test_duplicate_status_no_new_notification(self):
+        self.client.login(username='staff@test.com', password='StaffPass123!')
+        # First update → shipped (creates notification)
+        self.client.post(f'/orders/{self.order.id}/update-status/', {'status': 'shipped'})
+        count_after_first = Notification.objects.filter(user=self.customer).count()
+        # Same status again → no new notification
+        self.client.post(f'/orders/{self.order.id}/update-status/', {'status': 'shipped'})
+        count_after_second = Notification.objects.filter(user=self.customer).count()
+        self.assertEqual(count_after_first, count_after_second)

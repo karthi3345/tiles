@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from tiles.models import Notification
 import re
 
 
@@ -103,6 +104,14 @@ def register(request):
             backend="django.contrib.auth.backends.ModelBackend"
         )
 
+        # ── Notification: welcome on registration ──
+        Notification.objects.create(
+            user=user,
+            notif_type='general',
+            message=f"Welcome to Studio Mathri, {full_name}! Your account has been created.",
+            related_url='/accounts/profile/',
+        )
+
         messages.success(
             request,
             "Account created successfully!"
@@ -138,6 +147,15 @@ def login_view(request):
                 request,
                 user,
                 backend="django.contrib.auth.backends.ModelBackend"
+            )
+
+            # ── Notification: welcome back on login ──
+            name = user.get_full_name() or user.username
+            Notification.objects.create(
+                user=user,
+                notif_type='general',
+                message=f"Welcome back, {name}! You have logged in successfully.",
+                related_url='/accounts/profile/',
             )
 
             return redirect("accounts:profile")
@@ -210,6 +228,15 @@ def profile(request):
 
 # Logout
 def logout_view(request):
+
+    # ── Notification: record logout BEFORE session is destroyed ──
+    if request.user.is_authenticated:
+        Notification.objects.create(
+            user=request.user,
+            notif_type='general',
+            message="You have been logged out. See you soon!",
+            related_url='/',
+        )
 
     logout(request)
 

@@ -429,6 +429,8 @@ class Order(models.Model):
     STATUS_CHOICES = [
         ('created', 'Created'),
         ('paid', 'Paid'),
+        ('shipped', 'Shipped'),
+        ('delivered', 'Delivered'),
         ('failed', 'Failed'),
     ]
 

@@ -12,14 +12,6 @@
             <p class="mt-4 text-lg text-slate-500 max-w-2xl mx-auto">Describe a tile design and AI generates a PNG image.</p>
         </div>
 
-        {% if messages %}
-        <div class="max-w-2xl mx-auto mb-8 space-y-3">
-            {% for message in messages %}
-            <div class="px-5 py-3 rounded-xl text-sm font-medium {% if message.tags == 'success' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% endif %}">{{ message }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-
         <div class="grid lg:grid-cols-5 gap-8">
             <!-- Left Column: Settings -->
             <div class="lg:col-span-2">

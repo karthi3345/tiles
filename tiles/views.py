@@ -835,6 +835,15 @@ def payment_verify(request):
             amount=order.amount,
             status='failed',
         )
+
+        # ── Notification: payment failed ──
+        Notification.objects.create(
+            user=request.user,
+            notif_type='general',
+            message=f"Your payment for order {razorpay_order_id} failed. Please try again.",
+            related_url='/cart/',
+        )
+
         return redirect('tiles:payment_failed')
 
     # Signature verified — save order
@@ -869,6 +878,14 @@ def payment_verify(request):
         razorpay_signature=razorpay_signature,
         amount=order.amount,
         status='success',
+    )
+
+    # ── Notification: order placed successfully ──
+    Notification.objects.create(
+        user=request.user,
+        notif_type='general',
+        message=f"Your order {order.order_id} has been placed successfully! Total: ₹{order.amount}.",
+        related_url='/orders/',
     )
 
     # Clear cart + checkout session
@@ -908,3 +925,42 @@ def order_history(request):
         'orders': orders,
         'breadcrumbs': breadcrumbs,
     })
+
+
+@login_required(login_url='accounts:login')
+def update_order_status(request, order_id):
+    """Staff-only view to update order status and notify the customer."""
+    if not request.user.is_staff:
+        messages.error(request, "You don't have permission to update order status.")
+        return redirect('tiles:order_history')
+
+    order = get_object_or_404(Order, id=order_id)
+    new_status = request.POST.get('status', '').strip()
+
+    VALID_STATUSES = {'paid', 'shipped', 'delivered', 'failed'}
+    if new_status not in VALID_STATUSES:
+        messages.error(request, "Invalid order status.")
+        return redirect('tiles:order_history')
+
+    old_status = order.status
+    order.status = new_status
+    order.save(update_fields=['status', 'updated_at'])
+
+    # Create a notification for the customer when the status actually changes
+    if old_status != new_status and order.user:
+        notif_msgs = {
+            'shipped': f"Good news! Your order {order.order_id} has been shipped and is on its way.",
+            'delivered': f"Your order {order.order_id} has been delivered. Enjoy your tiles!",
+        }
+        notif_type = 'general'
+        message = notif_msgs.get(new_status)
+        if message:
+            Notification.objects.create(
+                user=order.user,
+                notif_type=notif_type,
+                message=message,
+                related_url='/orders/',
+            )
+
+    messages.success(request, f"Order {order.order_id} status updated to {new_status}.")
+    return redirect('tiles:order_history')
