@@ -103,10 +103,20 @@ TEMPLATES = [
 
 
 
-# Database — MySQL (workspace-provisioned)
-# PyMySQL is installed as the MySQL driver (see studiomathri/__init__.py for the shim)
-DATABASES = {
-    "default": {
+# Database — uses Neon (Postgres) when DATABASE_URL is set (Vercel/prod),
+# falls back to the workspace-provisioned MySQL otherwise (Drytis dev).
+import dj_database_url
+
+DATABASES = {}
+
+if os.environ.get("DATABASE_URL"):
+    DATABASES["default"] = dj_database_url.parse(
+        os.environ["DATABASE_URL"],
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
+else:
+    DATABASES["default"] = {
         "ENGINE": "django.db.backends.mysql",
         "NAME": os.environ.get("DB_NAME", os.environ.get("DATABASE_NAME")),
         "USER": os.environ.get("DB_USER", os.environ.get("DATABASE_USER")),
@@ -118,7 +128,6 @@ DATABASES = {
             "charset": "utf8mb4",
         },
     }
-}
 
 # Use SQLite in-memory for tests (dev MySQL user lacks CREATE DATABASE privilege)
 if 'test' in sys.argv:
