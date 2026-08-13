@@ -576,6 +576,18 @@ class NotificationEventTest(TestCase):
         self.assertIsNotNone(notif)
         self.assertIn('failed', notif.message)
 
+    # ── Payment failed view with error param creates notification ──
+    def test_payment_failed_view_creates_notification_from_error(self):
+        self.client.login(username='notifuser@test.com', password='TestPass123!')
+        Notification.objects.all().delete()
+        resp = self.client.get('/payment/failed/?error=Bank%20declined')
+        self.assertEqual(resp.status_code, 200)
+        notif = Notification.objects.filter(
+            user=self.user, message__contains='Bank declined'
+        ).first()
+        self.assertIsNotNone(notif)
+        self.assertIn('Payment failed', notif.message)
+
 
 class OrderDeliveryNotificationTest(TestCase):
     """Tests that delivery notifications are created when order status changes."""

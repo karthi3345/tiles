@@ -159,8 +159,8 @@ document.getElementById('rzp-button').onclick = function(e) {
     };
     var rzp = new Razorpay(options);
     rzp.on('payment.failed', function(resp) {
-        alert('Payment failed: ' + (resp.error?.description || 'Unknown error'));
-        window.location.href = '{% url "tiles:payment_failed" %}';
+        var errMsg = resp.error?.description || 'Unknown error';
+        window.location.href = '{% url "tiles:payment_failed" %}?error=' + encodeURIComponent(errMsg);
     });
     rzp.open();
     e.preventDefault();

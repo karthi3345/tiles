@@ -7,7 +7,6 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q, Count
-from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 import cloudinary.uploader
 
@@ -259,7 +258,11 @@ def generate_single_tile_image(request, slug):
     tile = get_object_or_404(TileProduct, slug=slug, is_active=True)
 
     if not image_gen_service.is_configured():
-        messages.error(request, 'Cloudflare AI not configured. Set CF_ACCOUNT_ID and CF_API_TOKEN in .env')
+        Notification.objects.create(
+            user=request.user, notif_type='image_failed',
+            message='Cloudflare AI not configured. Set CF_ACCOUNT_ID and CF_API_TOKEN in .env',
+            related_url=f'/tiles/{slug}/',
+        )
         return redirect('tiles:tile_detail', slug=slug)
 
     prompt = _build_tile_prompt(tile)
@@ -273,11 +276,16 @@ def generate_single_tile_image(request, slug):
         tile.image = image_url
         tile.save(update_fields=['image'])
 
-        messages.success(request, f'Design generated for {tile.name}!')
+        Notification.objects.create(
+            user=request.user, notif_type='image_generated',
+            message=f'Design generated for {tile.name}!',
+            related_url=f'/tiles/{slug}/',
+        )
     else:
-        messages.error(
-            request,
-            result.get('error', 'Generation failed. Check Cloudflare credentials.')
+        Notification.objects.create(
+            user=request.user, notif_type='image_failed',
+            message=result.get('error', 'Generation failed. Check Cloudflare credentials.'),
+            related_url=f'/tiles/{slug}/',
         )
 
     # CRITICAL: Must redirect back to the page at the end
@@ -287,7 +295,11 @@ def generate_single_tile_image(request, slug):
 @login_required
 def generate_all_tile_images(request):
     if not image_gen_service.is_configured():
-        messages.error(request, 'Cloudflare AI not configured. Set CF_ACCOUNT_ID and CF_API_TOKEN in .env')
+        Notification.objects.create(
+            user=request.user, notif_type='image_failed',
+            message='Cloudflare AI not configured. Set CF_ACCOUNT_ID and CF_API_TOKEN in .env',
+            related_url='/tiles/',
+        )
         return redirect('tiles:tile_catalog')
 
     if request.method == 'POST':
@@ -304,7 +316,11 @@ def generate_all_tile_images(request):
 
         total = products.count()
         if total == 0:
-            messages.info(request, 'No tiles need generation.')
+            Notification.objects.create(
+                user=request.user, notif_type='general',
+                message='No tiles need generation.',
+                related_url='/tiles/generate-all/',
+            )
             return redirect('tiles:generate_all_images')
 
         generated = 0
@@ -325,7 +341,11 @@ def generate_all_tile_images(request):
                 failed += 1
             time.sleep(1)
 
-        messages.success(request, f'Generated {generated} designs, {failed} failed (of {total} total)')
+        Notification.objects.create(
+            user=request.user, notif_type='image_generated',
+            message=f'Generated {generated} designs, {failed} failed (of {total} total)',
+            related_url='/tiles/generate-all/',
+        )
         return redirect('tiles:generate_all_images')
 
     categories = TileCategory.objects.all()
@@ -436,17 +456,30 @@ def generate_image_view(request):
                 image_url = upload_to_cloudinary(result['image_file'])
 
                 # Save URL to database
-                GeneratedImage.objects.create(
+                gen_img = GeneratedImage.objects.create(
                     user=request.user,
                     prompt=f"[{style}] {prompt}",
                     image=image_url,
                     model_used=image_gen_service.model,
                 )
 
-                messages.success(request, 'Tile design generated successfully!')
+                # ── Notification: image generated ──
+                Notification.objects.create(
+                    user=request.user,
+                    notif_type='image_generated',
+                    message=f"Your tile design \"{prompt[:50]}\" has been generated successfully!",
+                    related_url=f'/generate/',
+                )
+
                 return redirect('tiles:generate_image')
             else:
-                messages.error(request, result.get('error', 'Generation failed'))
+                # ── Notification: image generation failed ──
+                Notification.objects.create(
+                    user=request.user,
+                    notif_type='image_failed',
+                    message=f"Image generation failed: {result.get('error', 'Unknown error')}",
+                    related_url=f'/generate/',
+                )
 
     breadcrumbs = _build_breadcrumbs([('Generate Image', None)])
 
@@ -636,6 +669,14 @@ def download_generated_image(request, pk):
         f'attachment; filename="{filename}.{extension}"'
     )
 
+    # ── Notification: download complete ──
+    Notification.objects.create(
+        user=request.user,
+        notif_type='download_complete',
+        message=f"Image \"{filename}.{extension}\" downloaded ({width}×{height}, {dpi} DPI).",
+        related_url='/generate/',
+    )
+
     return download
 
 from django.views.generic import ListView
@@ -671,6 +712,39 @@ def mark_all_notifications_read(request):
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
 
+@login_required(login_url='accounts:login')
+def api_notifications(request):
+    """JSON endpoint for real-time notification polling.
+    Returns unread count and the 5 most recent notifications."""
+    qs = Notification.objects.filter(user=request.user)
+    unread_count = qs.filter(is_read=False).count()
+    recent = qs.order_by('-created_at')[:5]
+
+    NOTIF_ICONS = {
+        'image_generated': 'image-plus',
+        'image_failed': 'image-off',
+        'download_ready': 'download-cloud',
+        'download_complete': 'check-circle',
+        'general': 'bell',
+    }
+
+    return JsonResponse({
+        'unread_count': unread_count,
+        'notifications': [
+            {
+                'id': n.id,
+                'type': n.notif_type,
+                'icon': NOTIF_ICONS.get(n.notif_type, 'bell'),
+                'message': n.message,
+                'is_read': n.is_read,
+                'created_at': n.created_at.isoformat(),
+                'url': n.get_absolute_url(),
+            }
+            for n in recent
+        ]
+    })
+
+
 # ─────────── SHOPPING CART ───────────
 
 def cart_detail(request):
@@ -696,7 +770,12 @@ def cart_add(request, tile_id):
     cart = Cart(request)
     cart.add(tile_id=tile.id, quantity=quantity, size_label=size_label)
 
-    messages.success(request, f'Added "{tile.name}" to cart.')
+    if request.user.is_authenticated:
+        Notification.objects.create(
+            user=request.user, notif_type='general',
+            message=f'Added "{tile.name}" to cart.',
+            related_url='/cart/',
+        )
 
     # If 'buy_now' is set, redirect to checkout
     if request.POST.get('buy_now'):
@@ -712,7 +791,12 @@ def cart_update(request, tile_id):
     size_label = request.POST.get('size_label', '')
     cart = Cart(request)
     cart.update_quantity(tile_id=tile_id, quantity=quantity, size_label=size_label)
-    messages.success(request, 'Cart updated.')
+    if request.user.is_authenticated:
+        Notification.objects.create(
+            user=request.user, notif_type='general',
+            message='Cart updated.',
+            related_url='/cart/',
+        )
     return redirect('tiles:cart_detail')
 
 
@@ -722,7 +806,12 @@ def cart_remove(request, tile_id):
     size_label = request.POST.get('size_label', '')
     cart = Cart(request)
     cart.remove(tile_id=tile_id, size_label=size_label)
-    messages.success(request, 'Item removed from cart.')
+    if request.user.is_authenticated:
+        Notification.objects.create(
+            user=request.user, notif_type='general',
+            message='Item removed from cart.',
+            related_url='/cart/',
+        )
     return redirect('tiles:cart_detail')
 
 
@@ -737,7 +826,11 @@ def checkout(request):
     cart = Cart(request)
 
     if len(cart) == 0:
-        messages.warning(request, 'Your cart is empty.')
+        Notification.objects.create(
+            user=request.user, notif_type='general',
+            message='Your cart is empty.',
+            related_url='/tiles/',
+        )
         return redirect('tiles:tile_catalog')
 
     total = cart.get_total_price()
@@ -757,7 +850,11 @@ def checkout(request):
         shipping_address = request.POST.get('shipping_address', '').strip()
 
         if not all([customer_name, customer_email, customer_phone, shipping_address]):
-            messages.error(request, 'Please fill in all shipping details.')
+            Notification.objects.create(
+                user=request.user, notif_type='general',
+                message='Please fill in all shipping details.',
+                related_url='/cart/checkout/',
+            )
         else:
             amount_paise = int(total * 100)  # ₹ → paise
             try:
@@ -775,7 +872,11 @@ def checkout(request):
                     'shipping_address': shipping_address,
                 }
             except Exception as e:
-                messages.error(request, f'Payment gateway error: {str(e)}')
+                Notification.objects.create(
+                    user=request.user, notif_type='general',
+                    message=f'Payment gateway error: {str(e)}',
+                    related_url='/cart/checkout/',
+                )
 
     breadcrumbs = _build_breadcrumbs([
         ('Home', '/'),
@@ -808,7 +909,11 @@ def payment_verify(request):
     checkout_data = request.session.get('checkout', {})
 
     if not checkout_data or checkout_data.get('order_id') != razorpay_order_id:
-        messages.error(request, 'Session expired or invalid order. Please try again.')
+        Notification.objects.create(
+            user=request.user, notif_type='general',
+            message='Session expired or invalid order. Please try again.',
+            related_url='/cart/',
+        )
         return redirect('tiles:cart_detail')
 
     # Verify signature
@@ -907,8 +1012,16 @@ def payment_success(request):
 
 
 def payment_failed(request):
-    """Payment failure page."""
-    return render(request, 'tiles/cart/payment_failed.html')
+    """Payment failure page. Creates a notification if an error message is passed."""
+    error_msg = request.GET.get('error', '').strip()
+    if error_msg and request.user.is_authenticated:
+        Notification.objects.create(
+            user=request.user,
+            notif_type='general',
+            message=f'Payment failed: {error_msg}',
+            related_url='/cart/',
+        )
+    return render(request, 'tiles/cart/payment_failed.html', {'error': error_msg})
 
 
 # ─────────── ORDER HISTORY ───────────
@@ -931,7 +1044,11 @@ def order_history(request):
 def update_order_status(request, order_id):
     """Staff-only view to update order status and notify the customer."""
     if not request.user.is_staff:
-        messages.error(request, "You don't have permission to update order status.")
+        Notification.objects.create(
+            user=request.user, notif_type='general',
+            message="You don't have permission to update order status.",
+            related_url='/orders/',
+        )
         return redirect('tiles:order_history')
 
     order = get_object_or_404(Order, id=order_id)
@@ -939,7 +1056,11 @@ def update_order_status(request, order_id):
 
     VALID_STATUSES = {'paid', 'shipped', 'delivered', 'failed'}
     if new_status not in VALID_STATUSES:
-        messages.error(request, "Invalid order status.")
+        Notification.objects.create(
+            user=request.user, notif_type='general',
+            message="Invalid order status.",
+            related_url='/orders/',
+        )
         return redirect('tiles:order_history')
 
     old_status = order.status
@@ -962,5 +1083,9 @@ def update_order_status(request, order_id):
                 related_url='/orders/',
             )
 
-    messages.success(request, f"Order {order.order_id} status updated to {new_status}.")
+    Notification.objects.create(
+        user=request.user, notif_type='general',
+        message=f"Order {order.order_id} status updated to {new_status}.",
+        related_url='/orders/',
+    )
     return redirect('tiles:order_history')

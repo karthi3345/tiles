@@ -80,12 +80,12 @@
         >
             <iconify-icon icon="lucide:bell" class="text-lg text-slate-600"></iconify-icon>
             <!-- UNREAD BADGE -->
+            {% if unread_count|default:0 > 0 %}
             <span id="notif-badge"
                 class="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                {{ unread_count|default:"0" }}
+                {{ unread_count }}
             </span>
             <!-- PULSE DOT (when unread > 0) -->
-            {% if unread_count|default:0 > 0 %}
             <span class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping opacity-75"></span>
             {% endif %}
         </button>
@@ -413,6 +413,109 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (icon) icon.setAttribute("icon", "lucide:menu");
             });
         });
+    }
+
+    // ── NOTIFICATION POLLING (real-time badge + dropdown updates) ──
+    function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+
+    function timeAgo(dateString) {
+        const date = new Date(dateString);
+        const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+        if (seconds < 60) return seconds + "s";
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return minutes + "m";
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return hours + "h";
+        const days = Math.floor(hours / 24);
+        return days + "d";
+    }
+
+    function updateNotifBadge(unreadCount) {
+        const bell = document.getElementById("notif-btn");
+        if (!bell) return;
+        let badge = document.getElementById("notif-badge");
+        let pulse = bell.querySelector(".animate-ping");
+        if (unreadCount > 0) {
+            if (!badge) {
+                badge = document.createElement("span");
+                badge.id = "notif-badge";
+                badge.className = "absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm";
+                bell.appendChild(badge);
+            }
+            badge.textContent = unreadCount;
+            if (!pulse) {
+                pulse = document.createElement("span");
+                pulse.className = "absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping opacity-75";
+                bell.appendChild(pulse);
+            }
+        } else {
+            if (badge) badge.remove();
+            if (pulse) pulse.remove();
+        }
+    }
+
+    function rebuildNotifList(notifs) {
+        const list = document.getElementById("notif-list");
+        if (!list) return;
+        if (!notifs || notifs.length === 0) {
+            list.innerHTML = '<div class="px-5 py-12 text-center">' +
+                '<div class="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">' +
+                '<iconify-icon icon="lucide:bell-off" class="text-2xl text-slate-400"></iconify-icon></div>' +
+                '<p class="text-sm font-semibold text-slate-700">No notifications yet</p>' +
+                '<p class="text-xs text-slate-400 mt-1 max-w-[220px] mx-auto">Your image generation & download alerts will appear here</p>' +
+                '</div>';
+            return;
+        }
+        const iconColors = {
+            image_generated: 'bg-emerald-100 text-emerald-600',
+            image_failed: 'bg-red-100 text-red-600',
+            download_ready: 'bg-blue-100 text-blue-600',
+            download_complete: 'bg-violet-100 text-violet-600',
+            general: 'bg-slate-100 text-slate-600',
+        };
+        list.innerHTML = notifs.map(function(n) {
+            var colorClass = iconColors[n.type] || iconColors.general;
+            var unreadStyle = n.is_read ? '' : 'bg-brand-50/40 border-l-[3px] border-brand-500';
+            var dot = n.is_read ? '' : '<span class="w-2.5 h-2.5 bg-brand-500 rounded-full flex-shrink-0 mt-2"></span>';
+            return '<a href="' + escapeHtml(n.url || '#') + '" class="flex items-start gap-3 px-5 py-4 hover:bg-slate-50 transition-colors ' + unreadStyle + '">' +
+                '<div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ' + colorClass + '">' +
+                '<iconify-icon icon="lucide:' + n.icon + '" class="text-sm"></iconify-icon></div>' +
+                '<div class="flex-1 min-w-0">' +
+                '<p class="text-sm text-slate-800 leading-snug">' + escapeHtml(n.message.substring(0, 120)) + '</p>' +
+                '<p class="text-xs text-slate-400 mt-1 flex items-center gap-1">' +
+                '<iconify-icon icon="lucide:clock" class="text-[10px]"></iconify-icon>' + timeAgo(n.created_at) + ' ago</p>' +
+                '</div>' + dot + '</a>';
+        }).join('');
+    }
+
+    function pollNotifications() {
+        fetch("/api/notifications/")
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var prevUnread = window._lastUnread || 0;
+                var newUnread = data.unread_count;
+                updateNotifBadge(newUnread);
+                rebuildNotifList(data.notifications);
+                // Flash bell when new notifications arrive (no auto-open — user clicks bell to see)
+                if (newUnread > prevUnread && notifBtn) {
+                    notifBtn.classList.add("ring-2", "ring-red-400", "animate-bounce");
+                    setTimeout(function() {
+                        notifBtn.classList.remove("ring-2", "ring-red-400", "animate-bounce");
+                    }, 3000);
+                }
+                window._lastUnread = newUnread;
+            })
+            .catch(function() { /* silent fail */ });
+    }
+
+    // Initial fetch so _lastUnread is set immediately (no flash on first poll)
+    if (document.getElementById("notif-btn")) {
+        pollNotifications();
+        setInterval(pollNotifications, 30000);  // every 30 seconds
     }
 
 });

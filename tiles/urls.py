@@ -36,6 +36,7 @@ urlpatterns = [
 ),
     path('notifications/', views.NotificationListView.as_view(), name='notifications'),
     path('notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+    path('api/notifications/', views.api_notifications, name='api_notifications'),
 
     # Shopping Cart
     path('cart/', views.cart_detail, name='cart_detail'),

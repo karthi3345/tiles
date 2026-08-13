@@ -2,7 +2,6 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
 from tiles.models import Notification
 import re
 
@@ -108,13 +107,8 @@ def register(request):
         Notification.objects.create(
             user=user,
             notif_type='general',
-            message=f"Welcome to Studio Mathri, {full_name}! Your account has been created.",
+            message=f"Welcome to Studio Mathri, {full_name}! Your account has been created successfully.",
             related_url='/accounts/profile/',
-        )
-
-        messages.success(
-            request,
-            "Account created successfully!"
         )
 
         return redirect("accounts:profile")
@@ -201,9 +195,11 @@ def profile(request):
         if form.is_valid():
             form.save()
 
-            messages.success(
-                request,
-                "Profile picture updated successfully!"
+            Notification.objects.create(
+                user=request.user,
+                notif_type='general',
+                message="Profile picture updated successfully!",
+                related_url='/accounts/profile/',
             )
 
             return redirect("accounts:profile")
