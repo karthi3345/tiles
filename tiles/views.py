@@ -319,7 +319,7 @@ def generate_all_tile_images(request):
             Notification.objects.create(
                 user=request.user, notif_type='general',
                 message='No tiles need generation.',
-                related_url='/tiles/generate-all/',
+                related_url='/tiles/generate-all-designs/',
             )
             return redirect('tiles:generate_all_images')
 
@@ -344,7 +344,7 @@ def generate_all_tile_images(request):
         Notification.objects.create(
             user=request.user, notif_type='image_generated',
             message=f'Generated {generated} designs, {failed} failed (of {total} total)',
-            related_url='/tiles/generate-all/',
+            related_url='/tiles/generate-all-designs/',
         )
         return redirect('tiles:generate_all_images')
 
@@ -468,7 +468,7 @@ def generate_image_view(request):
                     user=request.user,
                     notif_type='image_generated',
                     message=f"Your tile design \"{prompt[:50]}\" has been generated successfully!",
-                    related_url=f'/generate/',
+                    related_url='/generate-image/',
                 )
 
                 return redirect('tiles:generate_image')
@@ -478,7 +478,7 @@ def generate_image_view(request):
                     user=request.user,
                     notif_type='image_failed',
                     message=f"Image generation failed: {result.get('error', 'Unknown error')}",
-                    related_url=f'/generate/',
+                    related_url='/generate-image/',
                 )
 
     breadcrumbs = _build_breadcrumbs([('Generate Image', None)])
@@ -674,7 +674,7 @@ def download_generated_image(request, pk):
         user=request.user,
         notif_type='download_complete',
         message=f"Image \"{filename}.{extension}\" downloaded ({width}×{height}, {dpi} DPI).",
-        related_url='/generate/',
+        related_url='/generate-image/',
     )
 
     return download
