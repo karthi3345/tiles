@@ -791,12 +791,6 @@ def cart_update(request, tile_id):
     size_label = request.POST.get('size_label', '')
     cart = Cart(request)
     cart.update_quantity(tile_id=tile_id, quantity=quantity, size_label=size_label)
-    if request.user.is_authenticated:
-        Notification.objects.create(
-            user=request.user, notif_type='general',
-            message='Cart updated.',
-            related_url='/cart/',
-        )
     return redirect('tiles:cart_detail')
 
 
@@ -806,10 +800,11 @@ def cart_remove(request, tile_id):
     size_label = request.POST.get('size_label', '')
     cart = Cart(request)
     cart.remove(tile_id=tile_id, size_label=size_label)
+    tile = get_object_or_404(TileProduct, id=tile_id, is_active=True)
     if request.user.is_authenticated:
         Notification.objects.create(
             user=request.user, notif_type='general',
-            message='Item removed from cart.',
+            message=f'Removed "{tile.name}" from cart.',
             related_url='/cart/',
         )
     return redirect('tiles:cart_detail')
