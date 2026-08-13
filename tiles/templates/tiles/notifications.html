@@ -42,13 +42,7 @@
                     {% elif notif.notif_type == 'download_ready' %}bg-blue-100 text-blue-600
                     {% elif notif.notif_type == 'download_complete' %}bg-violet-100 text-violet-600
                     {% else %}bg-slate-100 text-slate-600{% endif %}">
-                    <iconify-icon icon="
-                        {% if notif.notif_type == 'image_generated' %}lucide:image-plus
-                        {% elif notif.notif_type == 'image_failed' %}lucide:image-off
-                        {% elif notif.notif_type == 'download_ready' %}lucide:download-cloud
-                        {% elif notif.notif_type == 'download_complete' %}lucide:check-circle
-                        {% else %}lucide:bell{% endif %}
-                    " class="text-lg"></iconify-icon>
+                    <iconify-icon icon="{% if notif.notif_type == 'image_generated' %}lucide:image-plus{% elif notif.notif_type == 'image_failed' %}lucide:image-off{% elif notif.notif_type == 'download_ready' %}lucide:download-cloud{% elif notif.notif_type == 'download_complete' %}lucide:check-circle{% else %}lucide:bell{% endif %}" class="text-lg"></iconify-icon>
                 </div>
 
                 <!-- CONTENT -->
