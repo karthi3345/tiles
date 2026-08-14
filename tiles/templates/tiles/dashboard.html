@@ -1,0 +1,953 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio Mathri — Admin Dashboard</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              25: '#F2F7FF', 50: '#ECF3FF', 100: '#DEEBFF', 200: '#C2D5FF',
+              300: '#9AB9FF', 400: '#769BFF', 500: '#5B7DFF', 600: '#465FFF',
+              700: '#3641F2', 800: '#2A31D8', 900: '#252DAE',
+            },
+            graydark: {
+              25:'#FCFCFD',50:'#F5F6F8',100:'#EBECEF',200:'#D1D5DB',300:'#A3AAB8',
+              400:'#6B7280',500:'#4B5563',600:'#374151',700:'#2B2F38',
+              800:'#1C1E24',900:'#101317',950:'#0B0F15',
+            },
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+        },
+      },
+    };
+  </script>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- ApexCharts -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+  <!-- Leaflet Maps -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    [x-cloak] { display: none !important; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #465FFF; border-radius: 9px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb { background: #374151; }
+    .nav-item.active { background: #465FFF; }
+    .nav-item.active span { color: #fff; }
+    .nav-item.active i { color: #fff; }
+    .apexcharts-tooltip { backdrop-filter: blur(4px); }
+    .jvm-tooltip { border-radius: 6px; font-size: 12px; padding: 4px 10px; }
+    .leaflet-container { background: transparent; }
+    .leaflet-popup-content-wrapper { border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+    .leaflet-popup-content { margin: 10px 14px; }
+    .custom-leaflet-marker { background: transparent !important; border: none !important; }
+
+    /* Layer filter buttons */
+    .layer-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; font-weight: 600;
+      padding: 5px 10px; border-radius: 8px;
+      color: #6B7280; background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer; transition: all .15s;
+    }
+    .layer-btn:hover { background: #F5F6F8; }
+    .dark .layer-btn:hover { background: #1C1E24; }
+    .layer-btn.active {
+      background: #ECF3FF; color: #465FFF;
+      border-color: #C2D5FF;
+    }
+    .dark .layer-btn.active {
+      background: rgba(70,95,255,.15); color: #9AB9FF;
+      border-color: rgba(70,95,255,.4);
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .dot-all  { background: linear-gradient(90deg,#465FFF 50%,#F43F5E 50%); }
+    .dot-city { background: #465FFF; }
+    .dot-hub  { background: #10B981; }
+    .dot-user { background: #F43F5E; box-shadow: 0 0 0 2px #FDA4AF; }
+  </style>
+</head>
+
+<body class="bg-graydark-50 dark:bg-graydark-950 text-graydark-700 dark:text-graydark-25">
+<div class="flex min-h-screen" x-data="{ open: window.innerWidth >= 1024 }">
+
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <aside @toggle-sidebar.window="open = !open"
+         @keydown.escape.window="open = false"
+         :class="open ? 'translate-x-0' : '-translate-x-full'"
+         class="fixed top-0 z-50 w-[280px] h-screen bg-white dark:bg-graydark-900 border-r border-graydark-100 dark:border-graydark-800 flex flex-col transition-transform duration-300">
+
+    <!-- Logo -->
+    <div class="flex items-center gap-3 px-6 h-16 border-b border-graydark-100 dark:border-graydark-800 shrink-0">
+      <a href="/admin/" class="flex items-center gap-3 min-w-0" title="Go to Dashboard">
+        <div class="w-9 h-9 rounded-lg bg-brand-600 flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-cubes text-white text-lg"></i>
+        </div>
+        <div class="min-w-0">
+          <p class="font-bold text-graydark-900 dark:text-white text-sm leading-tight">Studio Mathri</p>
+          <p class="text-[11px] text-graydark-400">Admin Panel</p>
+        </div>
+      </a>
+      <button @click="open = false" class="ml-auto text-graydark-400 hover:text-graydark-700 dark:hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 overflow-y-auto sidebar-scroll px-4 py-4 space-y-1">
+
+      <!-- DASHBOARD GROUP -->
+      <p class="px-3 text-[11px] font-semibold text-graydark-400 uppercase tracking-wider mb-2">Main</p>
+      <a href="/admin/" class="nav-item active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-graydark-600 dark:text-graydark-300 hover:bg-brand-50 dark:hover:bg-graydark-800 transition">
+        <i class="fa-solid fa-chart-pie w-5 text-center"></i><span>Dashboard</span>
+      </a>
+
+      <!-- IN-DASHBOARD SECTIONS (all Django admin models, no redirect) -->
+      <p class="px-3 text-[11px] font-semibold text-graydark-400 uppercase tracking-wider mb-2 mt-4">Locations</p>
+      {% include 'tiles/sections/_nav_link.html' with s='countries' label='Countries' icon='fa-globe' count=total_countries %}
+      {% include 'tiles/sections/_nav_link.html' with s='states' label='States' icon='fa-map-location-dot' count=total_states %}
+      {% include 'tiles/sections/_nav_link.html' with s='cities' label='Cities' icon='fa-city' count=total_cities %}
+      {% include 'tiles/sections/_nav_link.html' with s='villages' label='Areas / Villages' icon='fa-map-pin' count=total_villages %}
+
+      <p class="px-3 text-[11px] font-semibold text-graydark-400 uppercase tracking-wider mb-2 mt-4">Catalog</p>
+      {% include 'tiles/sections/_nav_link.html' with s='products' label='Products' icon='fa-box' count=total_products %}
+      {% include 'tiles/sections/_nav_link.html' with s='categories' label='Categories' icon='fa-shapes' count=total_categories %}
+      {% include 'tiles/sections/_nav_link.html' with s='effects' label='Effects' icon='fa-wand-magic-sparkles' count=total_effects %}
+      {% include 'tiles/sections/_nav_link.html' with s='finishes' label='Finishes' icon='fa-gem' count=total_finishes %}
+      {% include 'tiles/sections/_nav_link.html' with s='sizes' label='Sizes' icon='fa-ruler-combined' count=total_sizes %}
+      {% include 'tiles/sections/_nav_link.html' with s='showrooms' label='Showrooms' icon='fa-store' count=total_showrooms %}
+      {% include 'tiles/sections/_nav_link.html' with s='insights' label='Market Insights' icon='fa-chart-line' count=total_insights %}
+
+      <p class="px-3 text-[11px] font-semibold text-graydark-400 uppercase tracking-wider mb-2 mt-4">AI</p>
+      {% include 'tiles/sections/_nav_link.html' with s='chats' label='Chat Sessions' icon='fa-comments' count=total_ai_chats %}
+      {% include 'tiles/sections/_nav_link.html' with s='messages' label='Chat Messages' icon='fa-message' count=total_messages %}
+      {% include 'tiles/sections/_nav_link.html' with s='images' label='Generated Images' icon='fa-image' count=total_ai_images %}
+
+      <p class="px-3 text-[11px] font-semibold text-graydark-400 uppercase tracking-wider mb-2 mt-4">People</p>
+      {% include 'tiles/sections/_nav_link.html' with s='users' label='Users' icon='fa-users' count=total_users %}
+      {% include 'tiles/sections/_nav_link.html' with s='profiles' label='User Profiles' icon='fa-id-card' count=total_profiles %}
+      {% include 'tiles/sections/_nav_link.html' with s='notifications' label='Notifications' icon='fa-bell' count=total_notifications %}
+
+      <p class="px-3 text-[11px] font-semibold text-graydark-400 uppercase tracking-wider mb-2 mt-4">Commerce</p>
+      {% include 'tiles/sections/_nav_link.html' with s='orders' label='Orders' icon='fa-cart-shopping' count=total_orders %}
+      {% include 'tiles/sections/_nav_link.html' with s='order-items' label='Order Items' icon='fa-list-check' count=total_order_items %}
+      {% include 'tiles/sections/_nav_link.html' with s='payments' label='Payments' icon='fa-credit-card' count=total_payments %}
+
+    </nav>
+
+    <!-- Pro card -->
+    <div class="m-4 p-4 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shrink-0">
+      <i class="fa-solid fa-gem text-2xl mb-2 block"></i>
+      <p class="text-sm font-semibold leading-tight">Global Tile Intelligence</p>
+      <p class="text-[11px] opacity-80 mt-1">{{ total_countries }} countries · {{ total_products }} products</p>
+    </div>
+  </aside>
+
+  <!-- Overlay for mobile -->
+  <div x-show="open" @click="open = false" x-cloak
+       class="fixed inset-0 bg-black/50 z-40 lg:hidden"></div>
+
+  <!-- ═══════════════ MAIN CONTENT ═══════════════ -->
+  <div class="flex-1 min-w-0 flex flex-col transition-[padding] duration-300"
+       :class="(open ? 'lg:pl-[280px]' : 'lg:pl-0')">
+
+    <!-- ── Top Navbar ── -->
+    <header class="sticky top-0 z-30 bg-white dark:bg-graydark-900 border-b border-graydark-100 dark:border-graydark-800 h-16 flex items-center px-4 lg:px-6 gap-3">
+
+      <button @click="open = !open"
+              class="w-10 h-10 rounded-xl bg-graydark-50 dark:bg-graydark-800 flex items-center justify-center hover:bg-graydark-100 dark:hover:bg-graydark-700 transition shrink-0"
+              title="Toggle sidebar">
+        <i class="fa-solid fa-bars text-graydark-500 dark:text-graydark-300 text-lg"></i>
+      </button>
+
+      <!-- Search -->
+      <div class="flex-1 max-w-md relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-graydark-400 text-sm"></i>
+        <input type="text" placeholder="Search..."
+               class="w-full pl-10 pr-4 py-2.5 bg-graydark-50 dark:bg-graydark-800 border border-transparent focus:border-brand-300 rounded-xl text-sm outline-none placeholder:text-graydark-400 text-graydark-700 dark:text-graydark-200">
+      </div>
+
+      <!-- Right-aligned controls -->
+      <div class="ml-auto flex items-center gap-2">
+
+      <!-- Theme toggle -->
+      <button id="themeToggle" class="w-10 h-10 rounded-xl bg-graydark-50 dark:bg-graydark-800 flex items-center justify-center hover:bg-graydark-100 dark:hover:bg-graydark-700 transition">
+        <i class="fa-solid fa-sun text-graydark-500 dark:hidden"></i>
+        <i class="fa-solid fa-moon text-graydark-300 hidden dark:inline"></i>
+      </button>
+
+      <!-- Notifications -->
+      <div class="relative" x-data="{open:false}">
+        <button @click="open=!open" class="w-10 h-10 rounded-xl bg-graydark-50 dark:bg-graydark-800 flex items-center justify-center hover:bg-graydark-100 dark:hover:bg-graydark-700 transition relative">
+          <i class="fa-solid fa-bell text-graydark-500"></i>
+          {% if unread_notifs > 0 %}
+          <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+          {% endif %}
+        </button>
+        <div x-show="open" @click.outside="open=false" x-cloak x-transition
+             class="absolute right-0 top-12 w-72 bg-white dark:bg-graydark-800 rounded-xl shadow-xl border border-graydark-100 dark:border-graydark-700 p-3 z-50">
+          <p class="text-sm font-semibold text-graydark-900 dark:text-white mb-2">Notifications</p>
+          <p class="text-xs text-graydark-400">{{ unread_notifs }} unread notifications</p>
+          <a href="/admin/section/notifications/" class="block mt-2 text-xs text-brand-600 hover:underline">View all →</a>
+        </div>
+      </div>
+
+      <!-- User dropdown -->
+      <div class="relative" x-data="{open:false}">
+        <button @click="open=!open" class="flex items-center gap-2 pr-2">
+          <div class="w-9 h-9 rounded-full bg-brand-600 flex items-center justify-center text-white font-semibold text-sm">
+            {{ admin_user.email|slice:":1"|upper }}
+          </div>
+          <div class="hidden md:block text-left">
+            <p class="text-sm font-semibold text-graydark-900 dark:text-white leading-tight">{{ admin_user.email|truncatechars:18 }}</p>
+            <p class="text-[11px] text-graydark-400">Administrator</p>
+          </div>
+          <i class="fa-solid fa-chevron-down text-[10px] text-graydark-400"></i>
+        </button>
+        <div x-show="open" @click.outside="open=false"  x-cloak
+             class="absolute right-0 top-12 w-52 bg-white dark:bg-graydark-800 rounded-xl shadow-xl border border-graydark-100 dark:border-graydark-700 py-2 z-50">
+          <div class="px-4 py-2 border-b border-graydark-100 dark:border-graydark-700">
+            <p class="text-sm font-semibold text-graydark-900 dark:text-white truncate">{{ admin_user.email }}</p>
+            <p class="text-[11px] text-graydark-400">Administrator</p>
+          </div>
+          <a href="/admin/section/users/" class="flex items-center gap-3 px-4 py-2 text-sm text-graydark-600 dark:text-graydark-300 hover:bg-graydark-50 dark:hover:bg-graydark-700">
+            <i class="fa-solid fa-users w-4"></i> Manage Users</a>
+          <a href="/admin/logout/" class="flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10">
+            <i class="fa-solid fa-right-from-bracket w-4"></i> Logout</a>
+        </div>
+      </div>
+
+      </div><!-- /ml-auto right controls -->
+    </header>
+
+    <!-- ── Page Content ── -->
+    <main class="flex-1 p-4 lg:p-6 space-y-6">
+
+      <!-- Page title -->
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h1 class="text-xl lg:text-2xl font-bold text-graydark-900 dark:text-white">eCommerce Dashboard</h1>
+          <nav class="text-[13px] text-graydark-400 mt-0.5">
+            <span>Dashboard</span> <i class="fa-solid fa-chevron-right text-[8px] mx-1"></i>
+            <span>eCommerce</span>
+          </nav>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="px-4 py-2 text-sm font-medium text-graydark-600 dark:text-graydark-300 bg-white dark:bg-graydark-800 border border-graydark-200 dark:border-graydark-700 rounded-xl hover:bg-graydark-50 dark:hover:bg-graydark-700 transition">
+            <i class="fa-solid fa-download mr-1"></i> Export
+          </button>
+          <button class="px-4 py-2 text-sm font-medium text-white bg-brand-600 rounded-xl hover:bg-brand-700 transition">
+            <i class="fa-solid fa-plus mr-1"></i> Add Product
+          </button>
+        </div>
+      </div>
+
+      <!-- ═══ STAT CARDS ═══ -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+
+        <!-- Users -->
+        <div class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 p-5">
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-11 h-11 rounded-xl bg-brand-50 dark:bg-brand-600/10 flex items-center justify-center">
+              <i class="fa-solid fa-users text-brand-600 dark:text-brand-400"></i>
+            </div>
+            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">+62%</span>
+          </div>
+          <p class="text-2xl font-bold text-graydark-900 dark:text-white">{{ total_users }}</p>
+          <p class="text-sm text-graydark-400 mt-0.5">Total Users</p>
+        </div>
+
+        <!-- Products -->
+        <div class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 p-5">
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-11 h-11 rounded-xl bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center">
+              <i class="fa-solid fa-box text-orange-500"></i>
+            </div>
+            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">+15%</span>
+          </div>
+          <p class="text-2xl font-bold text-graydark-900 dark:text-white">{{ total_products }}</p>
+          <p class="text-sm text-graydark-400 mt-0.5">Total Products</p>
+        </div>
+
+        <!-- Countries -->
+        <div class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 p-5">
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center">
+              <i class="fa-solid fa-globe text-emerald-500"></i>
+            </div>
+            <span class="text-xs font-semibold text-graydark-400 bg-graydark-100 dark:bg-graydark-800 px-2 py-0.5 rounded-full">10</span>
+          </div>
+          <p class="text-2xl font-bold text-graydark-900 dark:text-white">{{ total_countries }}</p>
+          <p class="text-sm text-graydark-400 mt-0.5">Countries Tracked</p>
+        </div>
+
+        <!-- AI Chats -->
+        <div class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 p-5">
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-11 h-11 rounded-xl bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center">
+              <i class="fa-solid fa-comments text-purple-500"></i>
+            </div>
+            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">Active</span>
+          </div>
+          <p class="text-2xl font-bold text-graydark-900 dark:text-white">{{ total_ai_chats }}</p>
+          <p class="text-sm text-graydark-400 mt-0.5">AI Chats</p>
+        </div>
+
+        <!-- AI Images -->
+        <div class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 p-5">
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-11 h-11 rounded-xl bg-pink-50 dark:bg-pink-500/10 flex items-center justify-center">
+              <i class="fa-solid fa-image text-pink-500"></i>
+            </div>
+            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">+{{ total_ai_images }}</span>
+          </div>
+          <p class="text-2xl font-bold text-graydark-900 dark:text-white">{{ total_ai_images }}</p>
+          <p class="text-sm text-graydark-400 mt-0.5">AI Images Generated</p>
+        </div>
+      </section>
+
+      <!-- ═══ CHARTS ROW 1 ═══ -->
+      <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        <!-- Monthly Sales (Area Chart) -->
+        <div class="lg:col-span-2 bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-semibold text-graydark-900 dark:text-white">Growth Overview</h3>
+              <p class="text-xs text-graydark-400">Monthly user registrations &amp; product additions</p>
+            </div>
+            <div class="flex items-center gap-2 text-xs">
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-brand-500"></span> Users</span>
+              <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-orange-400"></span> Products</span>
+            </div>
+          </div>
+          <div id="areaChart" class="w-full"></div>
+        </div>
+
+        <!-- Materials Donut -->
+        <div class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-semibold text-graydark-900 dark:text-white">Products by Material</h3>
+              <p class="text-xs text-graydark-400">{{ total_products }} products across {{ mat_labels|length }} materials</p>
+            </div>
+          </div>
+          <div id="donutChart" class="w-full"></div>
+        </div>
+      </section>
+
+      <!-- ═══ CHARTS ROW 2 ═══ -->
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        <!-- Categories Bar -->
+        <div class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-semibold text-graydark-900 dark:text-white">Products by Category</h3>
+              <p class="text-xs text-graydark-400">Top {{ cat_labels|length }} categories</p>
+            </div>
+          </div>
+          <div id="barChart" class="w-full"></div>
+        </div>
+
+        <!-- World Map — Products by Country -->
+        <div class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-semibold text-graydark-900 dark:text-white">Products by Country</h3>
+              <p class="text-xs text-graydark-400">{{ total_countries }} countries · {{ total_products }} products each</p>
+            </div>
+          </div>
+          <div id="countryMap" style="height: 320px; border-radius: 12px; overflow: hidden;"></div>
+        </div>
+      </section>
+
+      <!-- ═══ CHARTS ROW 3: Pie + City Map ═══ -->
+      <section class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+
+        <!-- Pie Chart -->
+        <div class="lg:col-span-2 bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-semibold text-graydark-900 dark:text-white">Order Status Distribution</h3>
+              <p class="text-xs text-graydark-400">{{ total_orders }} total orders{% if total_revenue > 0 %} · {{ total_revenue }} revenue{% endif %}</p>
+            </div>
+          </div>
+          {% if order_status_labels %}
+          <div id="pieChart" class="w-full"></div>
+          {% else %}
+          <div class="flex flex-col items-center justify-center py-12 text-center">
+            <i class="fa-solid fa-receipt text-4xl text-graydark-200 dark:text-graydark-700 mb-3"></i>
+            <p class="text-sm text-graydark-400">No orders yet</p>
+            <p class="text-xs text-graydark-300 mt-1">Orders will appear here once customers start purchasing</p>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- City Map — Users & Cities by Country -->
+        <div class="lg:col-span-3 bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 p-5">
+          <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <div>
+              <h3 class="text-base font-semibold text-graydark-900 dark:text-white">Cities, Users &amp; Coverage Map</h3>
+              <p class="text-xs text-graydark-400">{{ total_cities }} cities · {{ located_users }} users located · {{ total_states }} states · {{ total_villages }} areas</p>
+            </div>
+            <div class="flex items-center gap-1.5" id="mapLayerToggles">
+              <button data-layer="all"    class="layer-btn active"><span class="dot dot-all"></span>All</button>
+              <button data-layer="cities" class="layer-btn"><span class="dot dot-city"></span>Cities</button>
+              <button data-layer="hubs"   class="layer-btn"><span class="dot dot-hub"></span>Tile Hubs</button>
+              <button data-layer="users"  class="layer-btn"><span class="dot dot-user"></span>Users</button>
+            </div>
+          </div>
+          <div id="cityMap" style="height: 320px; border-radius: 12px; overflow: hidden;"></div>
+          <p class="text-xs text-graydark-400 mt-3"><i class="fa-solid fa-circle-info mr-1"></i>Click a filter to show only that layer{% if located_users == 0 %} — no users have set their location yet (users can add country &amp; city on their <a href="/accounts/profile/" target="_blank" class="text-brand-600 hover:underline">profile page</a>){% endif %}.</p>
+        </div>
+      </section>
+
+      <!-- ═══ RECENT ORDERS / PRODUCTS TABLE ═══ -->
+      <section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+        <div class="flex items-center justify-between p-5 border-b border-graydark-100 dark:border-graydark-800">
+          <h3 class="text-base font-semibold text-graydark-900 dark:text-white">Recent Products</h3>
+          <a href="/admin/section/products/" class="text-xs font-medium text-brand-600 hover:underline">View all</a>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-graydark-50 dark:bg-graydark-800/50 text-left text-graydark-400 text-xs">
+                <th class="px-5 py-3 font-semibold">Product</th>
+                <th class="px-5 py-3 font-semibold">Category</th>
+                <th class="px-5 py-3 font-semibold">Material</th>
+                <th class="px-5 py-3 font-semibold">Price</th>
+                <th class="px-5 py-3 font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-graydark-100 dark:divide-graydark-800">
+              {% for p in recent_products %}
+              <tr class="hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition">
+                <td class="px-5 py-3">
+                  <div class="flex items-center gap-3">
+                    {% if p.image %}
+                    <img src="{{ p.image }}" alt="" class="w-9 h-9 rounded-lg object-cover bg-graydark-100" onerror="this.style.display='none'">
+                    {% else %}
+                    <div class="w-9 h-9 rounded-lg bg-graydark-100 dark:bg-graydark-700 flex items-center justify-center"><i class="fa-solid fa-image text-graydark-400 text-xs"></i></div>
+                    {% endif %}
+                    <span class="font-medium text-graydark-700 dark:text-graydark-200">{{ p.name|truncatechars:35 }}</span>
+                  </div>
+                </td>
+                <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ p.category }}</td>
+                <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ p.material }}</td>
+                <td class="px-5 py-3 font-semibold text-graydark-700 dark:text-graydark-200">{{ p.price }}</td>
+                <td class="px-5 py-3">
+                  {% if p.is_active %}
+                  <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10">Active</span>
+                  {% else %}
+                  <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-graydark-100 text-graydark-500 dark:bg-graydark-700">Inactive</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══ THREE COLUMN: Users + Countries + AI ═══ -->
+      <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+        <!-- Recent Users -->
+        <div class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+          <div class="p-5 border-b border-graydark-100 dark:border-graydark-800">
+            <h3 class="text-base font-semibold text-graydark-900 dark:text-white">New Users</h3>
+            <p class="text-xs text-graydark-400">Recently registered</p>
+          </div>
+          <div class="p-2">
+            {% for u in recent_users %}
+            <div class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition">
+              {% if u.avatar %}
+              <img src="{{ u.avatar }}" alt="" class="w-9 h-9 rounded-full object-cover">
+              {% else %}
+              <div class="w-9 h-9 rounded-full bg-brand-600 flex items-center justify-center text-white font-semibold text-xs">{{ u.email|slice:":1"|upper }}</div>
+              {% endif %}
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-medium text-graydark-700 dark:text-graydark-200 truncate">{{ u.name }}</p>
+                <p class="text-[11px] text-graydark-400 truncate">{{ u.email }}</p>
+              </div>
+              <span class="text-[11px] text-graydark-400 shrink-0">{{ u.date|date:"M d" }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Top Countries -->
+        <div class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+          <div class="p-5 border-b border-graydark-100 dark:border-graydark-800">
+            <h3 class="text-base font-semibold text-graydark-900 dark:text-white">Top Countries</h3>
+            <p class="text-xs text-graydark-400">By global ranking</p>
+          </div>
+          <div class="p-2">
+            {% for c in country_table %}
+            <div class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition">
+              <span class="text-2xl">{{ c.flag }}</span>
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-medium text-graydark-700 dark:text-graydark-200 truncate">{{ c.name }}</p>
+                <p class="text-[11px] text-graydark-400">{{ c.continent }}</p>
+              </div>
+              <div class="flex items-center gap-1">
+                {% if c.is_producer %}
+                <span class="px-1.5 py-0.5 text-[9px] font-semibold rounded bg-blue-50 text-blue-600 dark:bg-blue-500/10">P</span>
+                {% endif %}
+                {% if c.is_consumer %}
+                <span class="px-1.5 py-0.5 text-[9px] font-semibold rounded bg-orange-50 text-orange-600 dark:bg-orange-500/10">C</span>
+                {% endif %}
+              </div>
+              <span class="text-xs font-semibold text-graydark-500 dark:text-graydark-400 shrink-0">#{{ c.ranking }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- AI Activity -->
+        <div class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+          <div class="p-5 border-b border-graydark-100 dark:border-graydark-800">
+            <h3 class="text-base font-semibold text-graydark-900 dark:text-white">AI Activity</h3>
+            <p class="text-xs text-graydark-400">Recent chat sessions</p>
+          </div>
+          <div class="p-2">
+            {% for c in recent_chats %}
+            <div class="p-2.5 rounded-xl hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition">
+              <div class="flex items-center gap-2 mb-1">
+                <i class="fa-solid fa-robot text-purple-500 text-xs"></i>
+                <p class="text-sm font-medium text-graydark-700 dark:text-graydark-200 truncate flex-1">{{ c.title|truncatechars:35 }}</p>
+                <span class="text-[10px] text-graydark-400 shrink-0">{{ c.msg_count }} msgs</span>
+              </div>
+              <p class="text-[11px] text-graydark-400 ml-5 truncate">{{ c.last_message }}</p>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ AI GENERATED IMAGES GALLERY ═══ -->
+      <section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 p-5">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-base font-semibold text-graydark-900 dark:text-white">AI Generated Images</h3>
+            <p class="text-xs text-graydark-400">{{ total_ai_images }} total generations</p>
+          </div>
+          <a href="/admin/section/images/" class="text-xs font-medium text-brand-600 hover:underline">View all →</a>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {% for img in recent_images %}
+          <div class="group relative aspect-square rounded-xl overflow-hidden bg-graydark-100 dark:bg-graydark-800">
+            {% if img.image %}
+            <img src="{{ img.image }}" alt="" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+            <div class="absolute inset-0 hidden items-center justify-center"><i class="fa-solid fa-image text-graydark-400 text-2xl"></i></div>
+            {% else %}
+            <div class="w-full h-full flex items-center justify-center"><i class="fa-solid fa-image text-graydark-400 text-2xl"></i></div>
+            {% endif %}
+            <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-end p-2">
+              <p class="text-[10px] text-white truncate">{{ img.prompt }}</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="text-center text-xs text-graydark-400 py-4">
+        Studio Mathri Admin Dashboard · Powered by TailAdmin
+      </footer>
+    </main>
+  </div>
+</div>
+
+<!-- ═══════════════ DATA for charts (json_script) ═══════════════ -->
+{{ cat_labels|json_script:"cat_labels" }}
+{{ cat_values|json_script:"cat_values" }}
+{{ mat_labels|json_script:"mat_labels" }}
+{{ mat_values|json_script:"mat_values" }}
+{{ month_labels|json_script:"month_labels" }}
+{{ user_series|json_script:"user_series" }}
+{{ prod_series|json_script:"prod_series" }}
+{{ order_status_labels|json_script:"order_status_labels" }}
+{{ order_status_values|json_script:"order_status_values" }}
+{{ country_markers|json_script:"country_markers" }}
+{{ city_markers|json_script:"city_markers" }}
+{{ user_markers|json_script:"user_markers" }}
+
+<script>
+(function () {
+  "use strict";
+
+  // ── Read chart data from json_script tags ──
+  function readJSON(id) {
+    var el = document.getElementById(id);
+    if (!el) return [];
+    try { return JSON.parse(el.textContent); } catch (e) { return []; }
+  }
+
+  var catLabels = readJSON("cat_labels");
+  var catValues = readJSON("cat_values");
+  var matLabels = readJSON("mat_labels");
+  var matValues = readJSON("mat_values");
+  var monthLabels = readJSON("month_labels");
+  var userSeries = readJSON("user_series");
+  var prodSeries = readJSON("prod_series");
+
+  // ── Color palette ──
+  var palette = ['#465FFF','#FB7185','#F59E0B','#10B981','#8B5CF6','#06B6D4','#EC4899','#84CC16','#F97316','#6366F1'];
+
+  function isDark() {
+    return document.documentElement.classList.contains('dark');
+  }
+
+  function gridColor()  { return isDark() ? '#1C1E24' : '#EBECEF'; }
+  function labelColor() { return isDark() ? '#6B7280' : '#6B7280'; }
+  function tooltipBg()  { return isDark() ? '#101317' : '#FFFFFF'; }
+  function tooltipText(){ return isDark() ? '#FCFCFD' : '#374151'; }
+
+  var barChart, donutChart, areaChart, pieChart;
+
+  function renderCharts() {
+
+  // ── Bar Chart: Categories ──
+  barChart = new ApexCharts(document.getElementById('barChart'), {
+    chart: { type: 'bar', height: 320, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
+    series: [{ name: 'Products', data: catValues }],
+    colors: ['#465FFF'],
+    plotOptions: { bar: { borderRadius: 6, columnWidth: '60%', distributed: true } },
+    dataLabels: { enabled: false },
+    xaxis: {
+      categories: catLabels,
+      labels: {
+        style: { colors: labelColor(), fontSize: '11px' },
+        rotate: 0,
+        trim: true,
+        hideOverlappingLabels: true,
+        formatter: function (val) { return val && val.length > 12 ? val.slice(0, 11) + '…' : val; },
+      },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+    },
+    yaxis: { labels: { style: { colors: labelColor() } } },
+    grid: { borderColor: gridColor(), strokeDashArray: 4 },
+    tooltip: { theme: isDark() ? 'dark' : 'light' },
+    fill: { colors: palette },
+    legend: { show: false },
+  });
+  barChart.render();
+
+  // ── Donut Chart: Materials ──
+  donutChart = new ApexCharts(document.getElementById('donutChart'), {
+    chart: { type: 'donut', height: 300, fontFamily: 'Inter, sans-serif' },
+    series: matValues,
+    labels: matLabels,
+    colors: palette,
+    legend: { position: 'bottom', fontSize: '12px', labels: { colors: labelColor() } },
+    dataLabels: { enabled: true, style: { fontSize: '12px' } },
+    tooltip: { theme: isDark() ? 'dark' : 'light' },
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '68%',
+          labels: {
+            show: true,
+            name: { color: labelColor(), fontSize: '13px' },
+            total: {
+              show: true,
+              label: 'Total',
+              color: labelColor(),
+              formatter: function () { return matValues.reduce(function(a,b){return a+b},0).toString(); }
+            }
+          }
+        }
+      }
+    },
+    responsive: [{ breakpoint: 480, options: { chart: { height: 250 } } }]
+  });
+  donutChart.render();
+
+  // ── Area Chart: Growth ──
+  areaChart = new ApexCharts(document.getElementById('areaChart'), {
+    chart: { type: 'area', height: 300, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
+    series: [
+      { name: 'Users', data: userSeries },
+      { name: 'Products', data: prodSeries },
+    ],
+    colors: ['#465FFF', '#FB923C'],
+    fill: {
+      type: 'gradient',
+      gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 100] }
+    },
+    dataLabels: { enabled: false },
+    stroke: { curve: 'smooth', width: 2 },
+    xaxis: {
+      categories: monthLabels,
+      labels: { style: { colors: labelColor() } },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+    },
+    yaxis: { labels: { style: { colors: labelColor() } } },
+    grid: { borderColor: gridColor(), strokeDashArray: 4 },
+    tooltip: { theme: isDark() ? 'dark' : 'light' },
+    legend: { show: false },
+    markers: { size: 0, hover: { size: 5 } },
+  });
+  areaChart.render();
+
+  // ── Pie Chart: Order Status ──
+  var pieEl = document.getElementById('pieChart');
+  if (pieEl) {
+    var orderLabels = readJSON('order_status_labels');
+    var orderValues = readJSON('order_status_values');
+    pieChart = new ApexCharts(pieEl, {
+      chart: { type: 'pie', height: 300, fontFamily: 'Inter, sans-serif' },
+      series: orderValues,
+      labels: orderLabels,
+      colors: ['#10B981', '#F59E0B', '#465FFF', '#8B5CF6', '#EF4444'],
+      legend: { position: 'bottom', fontSize: '12px', labels: { colors: labelColor() } },
+      dataLabels: { enabled: true, style: { fontSize: '12px' } },
+      tooltip: { theme: isDark() ? 'dark' : 'light' },
+      responsive: [{ breakpoint: 480, options: { chart: { height: 250 } } }]
+    });
+    pieChart.render();
+  }
+  } // end renderCharts
+
+  // Defer rendering until fonts/layout settle, then keep charts sized to container
+  function startCharts() {
+    renderCharts();
+    // Re-fit charts whenever the content column resizes (sidebar toggle, window resize)
+    if (window.ResizeObserver) {
+      var ro = new ResizeObserver(function () {
+        [barChart, donutChart, areaChart, pieChart].forEach(function (ch) {
+          if (ch && window.requestAnimationFrame) {
+            window.requestAnimationFrame(function () { try { ch.windowResizeHandler(); } catch (e) {} });
+          }
+        });
+      });
+      var mainEl = document.querySelector('main');
+      if (mainEl) ro.observe(mainEl);
+    }
+  }
+
+  if (document.readyState === 'complete') {
+    window.requestAnimationFrame(startCharts);
+  } else {
+    window.addEventListener('load', function () {
+      window.requestAnimationFrame(startCharts);
+    });
+  }
+
+  // ── Theme toggle ──
+  var themeBtn = document.getElementById('themeToggle');
+  var savedTheme = localStorage.getItem('sm-theme') || 'dark';
+  if (savedTheme === 'light') {
+    document.documentElement.classList.remove('dark');
+  }
+
+  themeBtn.addEventListener('click', function () {
+    document.documentElement.classList.toggle('dark');
+    var mode = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    localStorage.setItem('sm-theme', mode);
+    if (barChart) barChart.updateOptions({
+      xaxis: { labels: { style: { colors: labelColor() } } },
+      yaxis: { labels: { style: { colors: labelColor() } } },
+      grid: { borderColor: gridColor() },
+      tooltip: { theme: isDark() ? 'dark' : 'light' },
+    });
+    if (donutChart) donutChart.updateOptions({
+      legend: { labels: { colors: labelColor() } },
+      plotOptions: { pie: { donut: { labels: { name: { color: labelColor() }, total: { color: labelColor() } } } } },
+      tooltip: { theme: isDark() ? 'dark' : 'light' },
+    });
+    if (areaChart) areaChart.updateOptions({
+      xaxis: { labels: { style: { colors: labelColor() } } },
+      yaxis: { labels: { style: { colors: labelColor() } } },
+      grid: { borderColor: gridColor() },
+      tooltip: { theme: isDark() ? 'dark' : 'light' },
+    });
+    // Swap Leaflet tile layer for theme
+    if (typeof countryMap !== 'undefined') countryMap.eachLayer(function (layer) {
+      if (layer instanceof L.TileLayer) {
+        layer.setUrl('https://{s}.basemaps.cartocdn.com/' + (isDark() ? 'dark_all' : 'light_all') + '/{z}/{x}/{y}{r}.png');
+      }
+    });
+    if (typeof cityMap !== 'undefined') cityMap.eachLayer(function (layer) {
+      if (layer instanceof L.TileLayer) {
+        layer.setUrl('https://{s}.basemaps.cartocdn.com/' + (isDark() ? 'dark_all' : 'light_all') + '/{z}/{x}/{y}{r}.png');
+      }
+    });
+  });
+
+  // ── World Map 1: Products by Country (Leaflet) ──
+  var countryMarkers = readJSON('country_markers');
+  var cityMarkers = readJSON('city_markers');
+  var userMarkers = readJSON('user_markers');
+
+  // Initialize Leaflet map for countries
+  var countryMap = L.map('countryMap', {
+    zoomControl: true,
+    scrollWheelZoom: false,
+    minZoom: 1,
+    maxBounds: [[-90, -200], [90, 200]],
+    worldCopyJump: true,
+  }).setView([20, 10], 1);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/' + (isDark() ? 'dark_all' : 'light_all') + '/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19,
+  }).addTo(countryMap);
+
+  // Color by ranking
+  function rankColor(rank) {
+    var colors = ['#DC2626','#EA580C','#D97706','#65A30D','#059669','#0891B2','#0284C7','#4F46E5','#7C3AED','#C026D3'];
+    return colors[(rank - 1)] || '#6366F1';
+  }
+
+  // Add country markers
+  countryMarkers.forEach(function (cm) {
+    var popupHtml =
+      '<div style="font-family:Inter,sans-serif;min-width:160px">' +
+        '<div style="font-size:14px;font-weight:700;color:#1F2937;margin-bottom:4px">' + cm.flag + ' ' + cm.country + '</div>' +
+        '<div style="font-size:12px;color:#6B7280;margin-bottom:2px"><b>Rank:</b> #' + cm.ranking + '</div>' +
+        '<div style="font-size:12px;color:#6B7280;margin-bottom:2px"><b>Products:</b> ' + cm.products + '</div>' +
+        '<div style="font-size:12px;color:#6B7280;margin-bottom:2px"><b>Cities:</b> ' + cm.cities + '</div>' +
+        '<div style="margin-top:4px">' +
+          (cm.is_producer ? '<span style="display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;background:#DBEAFE;color:#1D4ED8;margin-right:4px">Producer</span>' : '') +
+          (cm.is_consumer ? '<span style="display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;background:#FFEDD5;color:#C2410C">Consumer</span>' : '') +
+        '</div>' +
+      '</div>';
+    var markerColor = rankColor(cm.ranking);
+    var icon = L.divIcon({
+      className: 'custom-leaflet-marker',
+      html: '<div style="width:18px;height:18px;border-radius:50%;background:' + markerColor + ';border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-size:9px;font-weight:700">' + cm.ranking + '</span></div>',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+      popupAnchor: [0, -9],
+    });
+    L.marker([cm.lat, cm.lng], { icon: icon }).addTo(countryMap).bindPopup(popupHtml);
+  });
+
+  // ── World Map 2: Cities, Users & Coverage (Leaflet) ──
+  var cityMap = L.map('cityMap', {
+    zoomControl: true,
+    scrollWheelZoom: false,
+    minZoom: 1,
+    worldCopyJump: true,
+  }).setView([20, 10], 1);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/' + (isDark() ? 'dark_all' : 'light_all') + '/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19,
+  }).addTo(cityMap);
+
+  // Layer groups so we can show/hide each layer exclusively
+  var layerGroups = {
+    cities: L.layerGroup().addTo(cityMap),
+    hubs:   L.layerGroup().addTo(cityMap),
+    users:  L.layerGroup().addTo(cityMap),
+  };
+
+  // Add city markers into their layer groups
+  cityMarkers.forEach(function (cm) {
+    var popupHtml =
+      '<div style="font-family:Inter,sans-serif;min-width:150px">' +
+        '<div style="font-size:13px;font-weight:700;color:#1F2937;margin-bottom:4px">' + cm.city + (cm.is_hub ? ' <span style="color:#059669">⭐</span>' : '') + '</div>' +
+        '<div style="font-size:12px;color:#6B7280">' +
+          '<i class="fa-solid fa-location-dot" style="width:14px"></i> ' + cm.flag + ' ' + cm.country + '<br>' +
+          '<i class="fa-solid fa-map" style="width:14px"></i> ' + cm.state +
+        '</div>' +
+      '</div>';
+    var dotColor = cm.is_hub ? '#10B981' : '#465FFF';
+    var dotSize = cm.is_hub ? 10 : 7;
+    var icon = L.divIcon({
+      className: 'custom-leaflet-marker',
+      html: '<div style="width:' + dotSize + 'px;height:' + dotSize + 'px;border-radius:50%;background:' + dotColor + ';border:1.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>',
+      iconSize: [dotSize, dotSize],
+      iconAnchor: [dotSize / 2, dotSize / 2],
+      popupAnchor: [0, -dotSize / 2],
+    });
+    var m = L.marker([cm.lat, cm.lng], { icon: icon }).bindPopup(popupHtml);
+    // Hubs go in the hubs layer (they are also cities), regular cities in cities layer
+    (cm.is_hub ? layerGroups.hubs : layerGroups.cities).addLayer(m);
+  });
+
+  // Add USER markers into the users layer group
+  userMarkers.forEach(function (um) {
+    var avatarHtml = um.avatar
+      ? '<img src="' + um.avatar + '" style="width:20px;height:20px;border-radius:50%;object-fit:cover">'
+      : '<div style="width:20px;height:20px;border-radius:50%;background:#465FFF;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700">' + (um.name || '?').charAt(0).toUpperCase() + '</div>';
+    var popupHtml =
+      '<div style="font-family:Inter,sans-serif;min-width:180px">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' + avatarHtml +
+          '<div><div style="font-size:13px;font-weight:700;color:#1F2937">' + um.name + '</div>' +
+          '<div style="font-size:11px;color:#6B7280">' + um.email + '</div></div>' +
+        '</div>' +
+        '<div style="font-size:12px;color:#6B7280">' +
+          '<i class="fa-solid fa-location-dot" style="width:14px"></i> ' + um.flag + ' ' + um.city + ', ' + um.state + ', ' + um.country +
+        '</div>' +
+        (um.is_staff ? '<div style="margin-top:6px"><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#EDE9FE;color:#6D28D9">Staff</span></div>' : '') +
+      '</div>';
+    var icon = L.divIcon({
+      className: 'custom-leaflet-marker',
+      html: '<div style="width:14px;height:14px;border-radius:50%;background:#F43F5E;border:2.5px solid #FDA4AF;box-shadow:0 1px 5px rgba(244,63,94,0.5)"></div>',
+      iconSize: [14, 14],
+      iconAnchor: [7, 7],
+      popupAnchor: [0, -7],
+    });
+    layerGroups.users.addLayer(
+      L.marker([um.lat, um.lng], { icon: icon }).bindPopup(popupHtml)
+    );
+  });
+
+  // ── Exclusive layer filter: show ONLY the selected layer ──
+  function showOnly(layer) {
+    ['cities', 'hubs', 'users'].forEach(function (name) {
+      if (layer === 'all' || layer === name) {
+        cityMap.addLayer(layerGroups[name]);
+      } else {
+        cityMap.removeLayer(layerGroups[name]);
+      }
+    });
+  }
+
+  var layerBtns = document.querySelectorAll('#mapLayerToggles .layer-btn');
+  layerBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      layerBtns.forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      showOnly(btn.dataset.layer);
+    });
+  });
+
+})();
+</script>
+
+</body>
+</html>

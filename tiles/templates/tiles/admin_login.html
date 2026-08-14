@@ -1,0 +1,110 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio Mathri — Admin Login</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              25: '#F2F7FF', 50: '#ECF3FF', 100: '#DEEBFF', 200: '#C2D5FF',
+              300: '#9AB9FF', 400: '#769BFF', 500: '#5B7DFF', 600: '#465FFF',
+              700: '#3641F2', 800: '#2A31D8', 900: '#252DAE',
+            },
+            graydark: {
+              25:'#FCFCFD',50:'#F5F6F8',100:'#EBECEF',200:'#D1D5DB',300:'#A3AAB8',
+              400:'#6B7280',500:'#4B5563',600:'#374151',700:'#2B2F38',
+              800:'#1C1E24',900:'#101317',950:'#0B0F15',
+            },
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+        },
+      },
+    };
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+
+<body class="min-h-screen bg-graydark-50 dark:bg-graydark-950 flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+
+    <!-- Logo -->
+    <div class="flex items-center justify-center gap-3 mb-8">
+      <div class="w-11 h-11 rounded-xl bg-brand-600 flex items-center justify-center">
+        <i class="fa-solid fa-cubes text-white text-lg"></i>
+      </div>
+      <div>
+        <p class="font-bold text-graydark-900 dark:text-white text-lg leading-tight">Studio Mathri</p>
+        <p class="text-xs text-graydark-400">Admin Panel</p>
+      </div>
+    </div>
+
+    <!-- Login card -->
+    <div class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 p-8 shadow-xl">
+      <h1 class="text-xl font-bold text-graydark-900 dark:text-white mb-1">Sign In</h1>
+      <p class="text-sm text-graydark-400 mb-6">Enter your admin credentials to access the dashboard</p>
+
+      {% if form.errors %}
+      <div class="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20">
+        <p class="text-sm text-red-600">
+          <i class="fa-solid fa-circle-exclamation mr-1.5"></i>
+          Invalid username or password.
+        </p>
+      </div>
+      {% endif %}
+
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next|default:'/admin/' }}">
+
+        <div>
+          <label for="id_username" class="block text-sm font-medium text-graydark-700 dark:text-graydark-300 mb-1.5">Username</label>
+          <div class="relative">
+            <i class="fa-solid fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-graydark-400 text-sm"></i>
+            <input type="text" name="username" id="id_username" required autofocus
+                   class="w-full pl-10 pr-4 py-3 bg-graydark-50 dark:bg-graydark-800 border border-graydark-200 dark:border-graydark-700 focus:border-brand-500 rounded-xl text-sm outline-none text-graydark-700 dark:text-graydark-200 placeholder:text-graydark-400"
+                   placeholder="Enter your username">
+        </div>
+        </div>
+
+        <div>
+          <label for="id_password" class="block text-sm font-medium text-graydark-700 dark:text-graydark-300 mb-1.5">Password</label>
+          <div class="relative">
+            <i class="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-graydark-400 text-sm"></i>
+            <input type="password" name="password" id="id_password" required
+                   class="w-full pl-10 pr-4 py-3 bg-graydark-50 dark:bg-graydark-800 border border-graydark-200 dark:border-graydark-700 focus:border-brand-500 rounded-xl text-sm outline-none text-graydark-700 dark:text-graydark-200 placeholder:text-graydark-400"
+                   placeholder="Enter your password">
+          </div>
+        </div>
+
+
+        <button type="submit"
+                class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm rounded-xl transition mt-2">
+          <i class="fa-solid fa-right-to-bracket mr-1.5"></i> Sign In
+        </button>
+      </form>
+
+      <p class="text-center text-xs text-graydark-400 mt-6">
+        <a href="/" class="hover:text-brand-600"><i class="fa-solid fa-arrow-left mr-1"></i>Back to website</a>
+      </p>
+    </div>
+
+    <p class="text-center text-xs text-graydark-400 mt-4">Studio Mathri Admin Panel</p>
+  </div>
+</body>
+</html>

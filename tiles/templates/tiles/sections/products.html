@@ -1,0 +1,44 @@
+{% extends 'tiles/sections/base_section.html' %}
+{% block content %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-graydark-50 dark:bg-graydark-800/50 text-left text-graydark-400 text-xs">
+          <th class="px-5 py-3 font-semibold">Product</th>
+          <th class="px-5 py-3 font-semibold">Category</th>
+          <th class="px-5 py-3 font-semibold">Material</th>
+          <th class="px-5 py-3 font-semibold">Price</th>
+          <th class="px-5 py-3 font-semibold">Featured</th>
+          <th class="px-5 py-3 font-semibold">Active</th>
+          <th class="px-5 py-3 font-semibold">Created</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-graydark-100 dark:divide-graydark-800">
+        {% for p in page_obj %}
+        <tr class="hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition">
+          <td class="px-5 py-3">
+            <div class="flex items-center gap-3">
+              {% if p.image %}
+              <img src="{{ p.image }}" alt="" class="w-9 h-9 rounded-lg object-cover bg-graydark-100" onerror="this.style.display='none'">
+              {% else %}
+              <div class="w-9 h-9 rounded-lg bg-graydark-100 dark:bg-graydark-700 flex items-center justify-center"><i class="fa-solid fa-image text-graydark-400 text-xs"></i></div>
+              {% endif %}
+              <span class="font-medium text-graydark-700 dark:text-graydark-200">{{ p.name|truncatechars:38 }}</span>
+            </div>
+          </td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ p.category.name|default:"—" }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ p.material|default:"—" }}</td>
+          <td class="px-5 py-3 font-semibold text-graydark-700 dark:text-graydark-200 whitespace-nowrap">{{ p.price_display }}</td>
+          <td class="px-5 py-3">{% if p.is_featured %}<span class="px-2 py-0.5 text-[10px] font-semibold rounded bg-amber-50 text-amber-600 dark:bg-amber-500/10">Featured</span>{% else %}<span class="text-xs text-graydark-300">—</span>{% endif %}</td>
+          <td class="px-5 py-3">{% if p.is_active %}<span class="px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10">Active</span>{% else %}<span class="px-2.5 py-1 text-xs font-medium rounded-full bg-graydark-100 text-graydark-500 dark:bg-graydark-700">Inactive</span>{% endif %}</td>
+          <td class="px-5 py-3 text-xs text-graydark-400">{{ p.created_at|date:"M d, Y" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="px-5 py-10 text-center text-graydark-400">No products</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'tiles/sections/base_section.html' %}
+{% block content %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-graydark-50 dark:bg-graydark-800/50 text-left text-graydark-400 text-xs">
+          <th class="px-5 py-3 font-semibold">Size Label</th>
+          <th class="px-5 py-3 font-semibold">Width (mm)</th>
+          <th class="px-5 py-3 font-semibold">Height (mm)</th>
+          <th class="px-5 py-3 font-semibold">Thickness (mm)</th>
+          <th class="px-5 py-3 font-semibold">Products</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-graydark-100 dark:divide-graydark-800">
+        {% for s in page_obj %}
+        <tr class="hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition">
+          <td class="px-5 py-3 font-medium text-graydark-700 dark:text-graydark-200">{{ s.size_label }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ s.width_mm }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ s.height_mm }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ s.thickness_mm|default:"—" }}</td>
+          <td class="px-5 py-3">
+            <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-brand-50 text-brand-600 dark:bg-brand-600/10 dark:text-brand-300">{{ s.product_count }}</span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-5 py-10 text-center text-graydark-400">No sizes</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

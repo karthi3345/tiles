@@ -1,0 +1,33 @@
+{% extends 'tiles/sections/base_section.html' %}
+{% block content %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-graydark-50 dark:bg-graydark-800/50 text-left text-graydark-400 text-xs">
+          <th class="px-5 py-3 font-semibold">Session</th>
+          <th class="px-5 py-3 font-semibold">Messages</th>
+          <th class="px-5 py-3 font-semibold">Created</th>
+          <th class="px-5 py-3 font-semibold">Last Activity</th>
+          <th class="px-5 py-3 font-semibold"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-graydark-100 dark:divide-graydark-800">
+        {% for s in page_obj %}
+        <tr class="hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition">
+          <td class="px-5 py-3 font-medium text-graydark-700 dark:text-graydark-200">{{ s.title|default:"(untitled)"|truncatechars:45 }}</td>
+          <td class="px-5 py-3"><span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-purple-50 text-purple-600 dark:bg-purple-500/10">{{ s.message_count }} msgs</span></td>
+          <td class="px-5 py-3 text-xs text-graydark-400">{{ s.created_at|date:"M d, Y H:i" }}</td>
+          <td class="px-5 py-3 text-xs text-graydark-400">{{ s.updated_at|date:"M d, Y H:i" }}</td>
+          <td class="px-5 py-3">
+            <a href="?session={{ s.session_id }}" class="text-xs font-medium text-brand-600 hover:underline">View messages →</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-5 py-10 text-center text-graydark-400">No chat sessions</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

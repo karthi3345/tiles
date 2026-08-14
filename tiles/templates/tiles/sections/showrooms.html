@@ -1,0 +1,39 @@
+{% extends 'tiles/sections/base_section.html' %}
+{% block content %}
+{% if page_obj %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-graydark-50 dark:bg-graydark-800/50 text-left text-graydark-400 text-xs">
+          <th class="px-5 py-3 font-semibold">Showroom</th>
+          <th class="px-5 py-3 font-semibold">Location</th>
+          <th class="px-5 py-3 font-semibold">Phone</th>
+          <th class="px-5 py-3 font-semibold">Products</th>
+          <th class="px-5 py-3 font-semibold">Active</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-graydark-100 dark:divide-graydark-800">
+        {% for s in page_obj %}
+        <tr class="hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition">
+          <td class="px-5 py-3 font-medium text-graydark-700 dark:text-graydark-200">{{ s.name }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">
+            {{ s.village.city.state.country.flag_emoji }} {{ s.village.name }}, {{ s.village.city.name }}
+          </td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400 font-mono text-xs">{{ s.phone|default:"—" }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ s.product_count }}</td>
+          <td class="px-5 py-3">{% if s.is_active %}<span class="px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10">Active</span>{% else %}<span class="px-2.5 py-1 text-xs font-medium rounded-full bg-graydark-100 text-graydark-500 dark:bg-graydark-700">Inactive</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% else %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 p-10 text-center">
+  <i class="fa-solid fa-store text-4xl text-graydark-200 dark:text-graydark-700 mb-3"></i>
+  <p class="text-sm text-graydark-400">No showrooms yet</p>
+  <p class="text-xs text-graydark-300 mt-1">Showrooms are added when partners register locations</p>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'tiles/sections/base_section.html' %}
+{% block content %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-graydark-50 dark:bg-graydark-800/50 text-left text-graydark-400 text-xs">
+          <th class="px-5 py-3 font-semibold">City</th>
+          <th class="px-5 py-3 font-semibold">State</th>
+          <th class="px-5 py-3 font-semibold">Country</th>
+          <th class="px-5 py-3 font-semibold">Coordinates</th>
+          <th class="px-5 py-3 font-semibold">Areas</th>
+          <th class="px-5 py-3 font-semibold">Tile Hub</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-graydark-100 dark:divide-graydark-800">
+        {% for c in page_obj %}
+        <tr class="hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition">
+          <td class="px-5 py-3 font-medium text-graydark-700 dark:text-graydark-200">{{ c.name }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ c.state.name }}</td>
+          <td class="px-5 py-3"><span class="text-base mr-1.5">{{ c.state.country.flag_emoji }}</span><span class="text-graydark-500 dark:text-graydark-400">{{ c.state.country.name }}</span></td>
+          <td class="px-5 py-3 text-xs font-mono text-graydark-400">{{ c.latitude|floatformat:3 }}, {{ c.longitude|floatformat:3 }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ c.village_count }}</td>
+          <td class="px-5 py-3">
+            {% if c.is_tile_hub %}<span class="px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10">Hub</span>
+            {% else %}<span class="text-xs text-graydark-300">—</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-5 py-10 text-center text-graydark-400">No cities</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

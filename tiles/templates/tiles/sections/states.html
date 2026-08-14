@@ -1,0 +1,29 @@
+{% extends 'tiles/sections/base_section.html' %}
+{% block content %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-graydark-50 dark:bg-graydark-800/50 text-left text-graydark-400 text-xs">
+          <th class="px-5 py-3 font-semibold">State</th>
+          <th class="px-5 py-3 font-semibold">Country</th>
+          <th class="px-5 py-3 font-semibold">Cities</th>
+          <th class="px-5 py-3 font-semibold">Slug</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-graydark-100 dark:divide-graydark-800">
+        {% for s in page_obj %}
+        <tr class="hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition">
+          <td class="px-5 py-3 font-medium text-graydark-700 dark:text-graydark-200">{{ s.name }}</td>
+          <td class="px-5 py-3"><span class="text-base mr-1.5">{{ s.country.flag_emoji }}</span><span class="text-graydark-500 dark:text-graydark-400">{{ s.country.name }}</span></td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ s.num_cities }}</td>
+          <td class="px-5 py-3 text-xs text-graydark-400 font-mono">{{ s.slug }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="px-5 py-10 text-center text-graydark-400">No states</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

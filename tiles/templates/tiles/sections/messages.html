@@ -1,0 +1,37 @@
+{% extends 'tiles/sections/base_section.html' %}
+{% block content %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-graydark-50 dark:bg-graydark-800/50 text-left text-graydark-400 text-xs">
+          <th class="px-5 py-3 font-semibold">Role</th>
+          <th class="px-5 py-3 font-semibold">Message</th>
+          <th class="px-5 py-3 font-semibold">Session</th>
+          <th class="px-5 py-3 font-semibold">Sent</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-graydark-100 dark:divide-graydark-800">
+        {% for m in page_obj %}
+        <tr class="hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition align-top">
+          <td class="px-5 py-3 whitespace-nowrap">
+            {% if m.role == 'user' %}
+            <span class="px-2.5 py-1 text-[10px] font-semibold rounded-full bg-blue-50 text-blue-600 dark:bg-blue-500/10">User</span>
+            {% elif m.role == 'assistant' %}
+            <span class="px-2.5 py-1 text-[10px] font-semibold rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10">AI</span>
+            {% else %}
+            <span class="px-2.5 py-1 text-[10px] font-semibold rounded-full bg-graydark-100 text-graydark-500 dark:bg-graydark-800">{{ m.role }}</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3 max-w-xl"><p class="text-graydark-600 dark:text-graydark-300 text-[13px] leading-relaxed">{{ m.content|truncatechars:220 }}</p></td>
+          <td class="px-5 py-3 text-xs text-graydark-400">{{ m.session.title|default:"(untitled)"|truncatechars:28 }}</td>
+          <td class="px-5 py-3 text-xs text-graydark-400 whitespace-nowrap">{{ m.created_at|date:"M d, H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="px-5 py-10 text-center text-graydark-400">No messages</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

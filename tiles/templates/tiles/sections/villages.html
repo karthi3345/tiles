@@ -1,0 +1,35 @@
+{% extends 'tiles/sections/base_section.html' %}
+{% block content %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-graydark-50 dark:bg-graydark-800/50 text-left text-graydark-400 text-xs">
+          <th class="px-5 py-3 font-semibold">Area / Village</th>
+          <th class="px-5 py-3 font-semibold">City</th>
+          <th class="px-5 py-3 font-semibold">State</th>
+          <th class="px-5 py-3 font-semibold">Country</th>
+          <th class="px-5 py-3 font-semibold">Type</th>
+          <th class="px-5 py-3 font-semibold">Pincode</th>
+          <th class="px-5 py-3 font-semibold">Showrooms</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-graydark-100 dark:divide-graydark-800">
+        {% for v in page_obj %}
+        <tr class="hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition">
+          <td class="px-5 py-3 font-medium text-graydark-700 dark:text-graydark-200">{{ v.name }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ v.city.name }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ v.city.state.name }}</td>
+          <td class="px-5 py-3"><span class="text-base mr-1.5">{{ v.city.state.country.flag_emoji }}</span><span class="text-graydark-500 dark:text-graydark-400">{{ v.city.state.country.name }}</span></td>
+          <td class="px-5 py-3"><span class="px-2 py-0.5 text-[10px] font-semibold rounded bg-graydark-100 dark:bg-graydark-800 text-graydark-500">{{ v.area_type }}</span></td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400 font-mono text-xs">{{ v.pincode|default:"—" }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ v.showroom_count }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="px-5 py-10 text-center text-graydark-400">No areas</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

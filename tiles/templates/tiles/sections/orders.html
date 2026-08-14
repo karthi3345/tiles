@@ -1,0 +1,66 @@
+{% extends 'tiles/sections/base_section.html' %}
+{% block content %}
+{% if page_obj %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-graydark-50 dark:bg-graydark-800/50 text-left text-graydark-400 text-xs">
+          <th class="px-5 py-3 font-semibold">Order ID</th>
+          <th class="px-5 py-3 font-semibold">Customer</th>
+          <th class="px-5 py-3 font-semibold">Amount</th>
+          <th class="px-5 py-3 font-semibold">Items</th>
+          <th class="px-5 py-3 font-semibold">Status</th>
+          <th class="px-5 py-3 font-semibold">Placed</th>
+          <th class="px-5 py-3 font-semibold"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-graydark-100 dark:divide-graydark-800">
+        {% for o in page_obj %}
+        <tr class="hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition align-top">
+          <td class="px-5 py-3 font-mono text-xs text-graydark-500 dark:text-graydark-400">{{ o.order_id|truncatechars:20 }}</td>
+          <td class="px-5 py-3">
+            <p class="font-medium text-graydark-700 dark:text-graydark-200">{{ o.customer_name|default:"—" }}</p>
+            <p class="text-[11px] text-graydark-400">{{ o.customer_email }}</p>
+          </td>
+          <td class="px-5 py-3 font-semibold text-graydark-700 dark:text-graydark-200 whitespace-nowrap">{{ o.currency }} {{ o.amount }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">
+            {{ o.item_count }} item{{ o.item_count|pluralize }}
+            {% if o.items.all %}
+            <ul class="mt-1 space-y-0.5">
+              {% for item in o.items.all|slice:":3" %}
+              <li class="text-[11px] text-graydark-400">· {{ item.tile_name }} ×{{ item.quantity }}</li>
+              {% endfor %}
+              {% if o.items.all|length > 3 %}<li class="text-[11px] text-graydark-400">+{{ o.items.all|length|add:"-3" }} more</li>{% endif %}
+            </ul>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3">
+            {% if o.status == 'delivered' %}<span class="px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10">Delivered</span>
+            {% elif o.status == 'shipped' %}<span class="px-2.5 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-600 dark:bg-blue-500/10">Shipped</span>
+            {% elif o.status == 'paid' %}<span class="px-2.5 py-1 text-xs font-medium rounded-full bg-brand-50 text-brand-600 dark:bg-brand-600/10">Paid</span>
+            {% elif o.status == 'failed' %}<span class="px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-600 dark:bg-red-500/10">Failed</span>
+            {% else %}<span class="px-2.5 py-1 text-xs font-medium rounded-full bg-graydark-100 text-graydark-500 dark:bg-graydark-700">{{ o.status|default:"created" }}</span>{% endif %}
+          </td>
+          <td class="px-5 py-3 text-xs text-graydark-400">{{ o.created_at|date:"M d, Y H:i" }}</td>
+          <td class="px-5 py-3">
+            {% if o.payments.all %}
+            {% for pm in o.payments.all %}
+            <p class="text-[11px] {% if pm.status == 'success' %}text-emerald-500{% else %}text-red-500{% endif %}">{{ pm.status }} · {{ pm.amount }}</p>
+            {% endfor %}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% else %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 p-10 text-center">
+  <i class="fa-solid fa-cart-shopping text-4xl text-graydark-200 dark:text-graydark-700 mb-3"></i>
+  <p class="text-sm text-graydark-400">No orders yet</p>
+  <p class="text-xs text-graydark-300 mt-1">Customer orders will appear here after the first purchase</p>
+</section>
+{% endif %}
+{% endblock %}

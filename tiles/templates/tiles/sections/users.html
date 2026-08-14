@@ -1,0 +1,48 @@
+{% extends 'tiles/sections/base_section.html' %}
+{% block content %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-graydark-50 dark:bg-graydark-800/50 text-left text-graydark-400 text-xs">
+          <th class="px-5 py-3 font-semibold">User</th>
+          <th class="px-5 py-3 font-semibold">Email</th>
+          <th class="px-5 py-3 font-semibold">Joined</th>
+          <th class="px-5 py-3 font-semibold">Last Login</th>
+          <th class="px-5 py-3 font-semibold">Orders</th>
+          <th class="px-5 py-3 font-semibold">Images</th>
+          <th class="px-5 py-3 font-semibold">Role</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-graydark-100 dark:divide-graydark-800">
+        {% for u in page_obj %}
+        <tr class="hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition">
+          <td class="px-5 py-3">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-full bg-brand-600 flex items-center justify-center text-white font-semibold text-xs">{{ u.email|slice:":1"|upper }}</div>
+              <div>
+                <p class="font-medium text-graydark-700 dark:text-graydark-200">{{ u.username }}</p>
+                {% if u.user_profile %}<p class="text-[11px] text-graydark-400">{{ u.user_profile.full_name }}</p>{% endif %}
+              </div>
+            </div>
+          </td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ u.email }}</td>
+          <td class="px-5 py-3 text-xs text-graydark-400">{{ u.date_joined|date:"M d, Y" }}</td>
+          <td class="px-5 py-3 text-xs text-graydark-400">{% if u.last_login %}{{ u.last_login|date:"M d, H:i" }}{% else %}Never{% endif %}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ u.order_count }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ u.image_count }}</td>
+          <td class="px-5 py-3 space-x-1">
+            {% if u.is_superuser %}<span class="px-2 py-0.5 text-[10px] font-semibold rounded bg-purple-50 text-purple-600 dark:bg-purple-500/10">Superuser</span>
+            {% elif u.is_staff %}<span class="px-2 py-0.5 text-[10px] font-semibold rounded bg-blue-50 text-blue-600 dark:bg-blue-500/10">Staff</span>
+            {% else %}<span class="px-2 py-0.5 text-[10px] font-semibold rounded bg-graydark-100 text-graydark-500 dark:bg-graydark-800">User</span>{% endif %}
+            {% if not u.is_active %}<span class="px-2 py-0.5 text-[10px] font-semibold rounded bg-red-50 text-red-600 dark:bg-red-500/10">Disabled</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="px-5 py-10 text-center text-graydark-400">No users</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

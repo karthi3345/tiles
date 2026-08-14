@@ -1,0 +1,264 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ section_label }} — Studio Mathri Admin</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              25: '#F2F7FF', 50: '#ECF3FF', 100: '#DEEBFF', 200: '#C2D5FF',
+              300: '#9AB9FF', 400: '#769BFF', 500: '#5B7DFF', 600: '#465FFF',
+              700: '#3641F2', 800: '#2A31D8', 900: '#252DAE',
+            },
+            graydark: {
+              25:'#FCFCFD',50:'#F5F6F8',100:'#EBECEF',200:'#D1D5DB',300:'#A3AAB8',
+              400:'#6B7280',500:'#4B5563',600:'#374151',700:'#2B2F38',
+              800:'#1C1E24',900:'#101317',950:'#0B0F15',
+            },
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+        },
+      },
+    };
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    [x-cloak] { display: none !important; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #465FFF; border-radius: 9px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb { background: #374151; }
+    .nav-item.active { background: #465FFF; }
+    .nav-item.active span, .nav-item.active i { color: #fff; }
+    table a { color: inherit; }
+  </style>
+</head>
+
+<body class="bg-graydark-50 dark:bg-graydark-950 text-graydark-700 dark:text-graydark-25">
+<div class="flex min-h-screen" x-data="{ open: window.innerWidth >= 1024 }">
+
+  <!-- ═══════════════ SIDEBAR ═══════════════ -->
+  <aside @toggle-sidebar.window="open = !open"
+         @keydown.escape.window="open = false"
+         :class="open ? 'translate-x-0' : '-translate-x-full'"
+         class="fixed top-0 z-50 w-[280px] h-screen bg-white dark:bg-graydark-900 border-r border-graydark-100 dark:border-graydark-800 flex flex-col transition-transform duration-300">
+
+    <!-- Logo -->
+    <div class="flex items-center gap-3 px-6 h-16 border-b border-graydark-100 dark:border-graydark-800 shrink-0">
+      <a href="/admin/" class="flex items-center gap-3 min-w-0" title="Go to Dashboard">
+        <div class="w-9 h-9 rounded-lg bg-brand-600 flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-cubes text-white text-lg"></i>
+        </div>
+        <div class="min-w-0">
+          <p class="font-bold text-graydark-900 dark:text-white text-sm leading-tight">Studio Mathri</p>
+          <p class="text-[11px] text-graydark-400">Admin Panel</p>
+        </div>
+      </a>
+      <button @click="open = false" class="ml-auto text-graydark-400 hover:text-graydark-700 dark:hover:text-white">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 overflow-y-auto sidebar-scroll px-4 py-4 space-y-1">
+
+      <p class="px-3 text-[11px] font-semibold text-graydark-400 uppercase tracking-wider mb-2">Main</p>
+      <a href="/admin/" class="nav-item {% if section == 'dashboard' %}active{% endif %} flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-graydark-600 dark:text-graydark-300 hover:bg-brand-50 dark:hover:bg-graydark-800 transition">
+        <i class="fa-solid fa-chart-pie w-5 text-center"></i><span>Dashboard</span>
+      </a>
+
+      <p class="px-3 text-[11px] font-semibold text-graydark-400 uppercase tracking-wider mb-2 mt-4">Locations</p>
+      {% include 'tiles/sections/_nav_link.html' with s='countries' label='Countries' icon='fa-globe' count=total.countries %}
+      {% include 'tiles/sections/_nav_link.html' with s='states' label='States' icon='fa-map-location-dot' count=total.states %}
+      {% include 'tiles/sections/_nav_link.html' with s='cities' label='Cities' icon='fa-city' count=total.cities %}
+      {% include 'tiles/sections/_nav_link.html' with s='villages' label='Areas / Villages' icon='fa-map-pin' count=total.villages %}
+
+      <p class="px-3 text-[11px] font-semibold text-graydark-400 uppercase tracking-wider mb-2 mt-4">Catalog</p>
+      {% include 'tiles/sections/_nav_link.html' with s='products' label='Products' icon='fa-box' count=total.products %}
+      {% include 'tiles/sections/_nav_link.html' with s='categories' label='Categories' icon='fa-shapes' count=total.categories %}
+      {% include 'tiles/sections/_nav_link.html' with s='effects' label='Effects' icon='fa-wand-magic-sparkles' count=total.effects %}
+      {% include 'tiles/sections/_nav_link.html' with s='finishes' label='Finishes' icon='fa-gem' count=total.finishes %}
+      {% include 'tiles/sections/_nav_link.html' with s='sizes' label='Sizes' icon='fa-ruler-combined' count=total.sizes %}
+      {% include 'tiles/sections/_nav_link.html' with s='showrooms' label='Showrooms' icon='fa-store' count=total.showrooms %}
+      {% include 'tiles/sections/_nav_link.html' with s='insights' label='Market Insights' icon='fa-chart-line' count=total.insights %}
+
+      <p class="px-3 text-[11px] font-semibold text-graydark-400 uppercase tracking-wider mb-2 mt-4">AI</p>
+      {% include 'tiles/sections/_nav_link.html' with s='chats' label='Chat Sessions' icon='fa-comments' count=total.chats %}
+      {% include 'tiles/sections/_nav_link.html' with s='messages' label='Chat Messages' icon='fa-message' count=total.messages %}
+      {% include 'tiles/sections/_nav_link.html' with s='images' label='Generated Images' icon='fa-image' count=total.images %}
+
+      <p class="px-3 text-[11px] font-semibold text-graydark-400 uppercase tracking-wider mb-2 mt-4">People</p>
+      {% include 'tiles/sections/_nav_link.html' with s='users' label='Users' icon='fa-users' count=total.users %}
+      {% include 'tiles/sections/_nav_link.html' with s='profiles' label='User Profiles' icon='fa-id-card' count=total.profiles %}
+      {% include 'tiles/sections/_nav_link.html' with s='notifications' label='Notifications' icon='fa-bell' count=total.notifications %}
+
+      <p class="px-3 text-[11px] font-semibold text-graydark-400 uppercase tracking-wider mb-2 mt-4">Commerce</p>
+      {% include 'tiles/sections/_nav_link.html' with s='orders' label='Orders' icon='fa-cart-shopping' count=total.orders %}
+      {% include 'tiles/sections/_nav_link.html' with s='order-items' label='Order Items' icon='fa-list-check' count=total.order_items %}
+      {% include 'tiles/sections/_nav_link.html' with s='payments' label='Payments' icon='fa-credit-card' count=total.payments %}
+
+      <p class="px-3 text-[11px] font-semibold text-graydark-400 uppercase tracking-wider mb-2 mt-4">System</p>
+      <a href="/django-admin/" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-graydark-600 dark:text-graydark-300 hover:bg-brand-50 dark:hover:bg-graydark-800 transition">
+        <i class="fa-solid fa-gear w-5 text-center"></i><span>Advanced Settings</span>
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Overlay for mobile -->
+  <div x-show="open" @click="open = false" x-cloak
+       class="fixed inset-0 bg-black/50 z-40 lg:hidden"></div>
+
+  <!-- ═══════════════ MAIN CONTENT ═══════════════ -->
+  <div class="flex-1 min-w-0 flex flex-col transition-[padding] duration-300"
+       :class="(open ? 'lg:pl-[280px]' : 'lg:pl-0')">
+
+    <!-- ── Top Navbar ── -->
+    <header class="sticky top-0 z-30 bg-white dark:bg-graydark-900 border-b border-graydark-100 dark:border-graydark-800 h-16 flex items-center px-4 lg:px-6 gap-3">
+
+      <button @click="open = !open"
+              class="w-10 h-10 rounded-xl bg-graydark-50 dark:bg-graydark-800 flex items-center justify-center hover:bg-graydark-100 dark:hover:bg-graydark-700 transition shrink-0"
+              title="Toggle sidebar">
+        <i class="fa-solid fa-bars text-graydark-500 dark:text-graydark-300 text-lg"></i>
+      </button>
+
+      <!-- Search -->
+      <div class="flex-1 max-w-md relative">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-graydark-400 text-sm"></i>
+        <input type="text" placeholder="Search..."
+               class="w-full pl-10 pr-4 py-2.5 bg-graydark-50 dark:bg-graydark-800 border border-transparent focus:border-brand-300 rounded-xl text-sm outline-none placeholder:text-graydark-400 text-graydark-700 dark:text-graydark-200">
+      </div>
+
+      <!-- Right-aligned controls -->
+      <div class="ml-auto flex items-center gap-2">
+
+      <!-- Theme toggle -->
+      <button id="themeToggle" class="w-10 h-10 rounded-xl bg-graydark-50 dark:bg-graydark-800 flex items-center justify-center hover:bg-graydark-100 dark:hover:bg-graydark-700 transition">
+        <i class="fa-solid fa-sun text-graydark-500 dark:hidden"></i>
+        <i class="fa-solid fa-moon text-graydark-300 hidden dark:inline"></i>
+      </button>
+
+      <!-- User dropdown -->
+      <div class="relative" x-data="{open:false}">
+        <button @click="open=!open" class="flex items-center gap-2 pr-2">
+          <div class="w-9 h-9 rounded-full bg-brand-600 flex items-center justify-center text-white font-semibold text-sm">
+            {{ request.user.email|slice:":1"|upper }}
+          </div>
+          <div class="hidden md:block text-left">
+            <p class="text-sm font-semibold text-graydark-900 dark:text-white leading-tight">{{ request.user.email|truncatechars:18 }}</p>
+            <p class="text-[11px] text-graydark-400">Administrator</p>
+          </div>
+          <i class="fa-solid fa-chevron-down text-[10px] text-graydark-400"></i>
+        </button>
+        <div x-show="open" @click.outside="open=false" x-cloak
+             class="absolute right-0 top-12 w-52 bg-white dark:bg-graydark-800 rounded-xl shadow-xl border border-graydark-100 dark:border-graydark-700 py-2 z-50">
+          <div class="px-4 py-2 border-b border-graydark-100 dark:border-graydark-700">
+            <p class="text-sm font-semibold text-graydark-900 dark:text-white truncate">{{ request.user.email }}</p>
+            <p class="text-[11px] text-graydark-400">Administrator</p>
+          </div>
+          <a href="/admin/section/users/" class="flex items-center gap-3 px-4 py-2 text-sm text-graydark-600 dark:text-graydark-300 hover:bg-graydark-50 dark:hover:bg-graydark-700">
+            <i class="fa-solid fa-users w-4"></i> Manage Users</a>
+          <a href="/admin/logout/" class="flex items-center gap-3 px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10">
+            <i class="fa-solid fa-right-from-bracket w-4"></i> Logout</a>
+        </div>
+      </div>
+
+      </div><!-- /ml-auto -->
+    </header>
+
+    <!-- ── Page Content ── -->
+    <main class="flex-1 p-4 lg:p-6 space-y-6">
+
+      <!-- Page title + breadcrumb -->
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h1 class="text-xl lg:text-2xl font-bold text-graydark-900 dark:text-white flex items-center gap-3">
+            <i class="fa-solid {{ section_icon }} text-brand-500"></i>
+            {{ section_label }}
+          </h1>
+          {% if section_desc %}<p class="text-[13px] text-graydark-400 mt-1">{{ section_desc }}{% if title_extra %} · {{ title_extra }}{% endif %}</p>{% endif %}
+        </div>
+        <nav class="text-[13px] text-graydark-400">
+          <a href="/admin/" class="hover:text-brand-600">Dashboard</a>
+          <i class="fa-solid fa-chevron-right text-[8px] mx-1"></i>
+          <span>{{ section_label }}</span>
+        </nav>
+      </div>
+
+      <!-- Record count bar -->
+      <div class="flex items-center gap-3 text-sm">
+        <span class="px-3 py-1.5 rounded-full bg-brand-50 dark:bg-brand-600/10 text-brand-600 dark:text-brand-300 font-semibold text-xs">
+          {{ page_obj.paginator.count }} records
+        </span>
+        {% if page_obj.has_other_pages %}
+        <span class="text-xs text-graydark-400">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% endif %}
+      </div>
+
+      <!-- ── Section content (blocks) ── -->
+      {% block content %}{% endblock %}
+
+      <!-- Pagination -->
+      {% if page_obj.has_other_pages %}
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <p class="text-xs text-graydark-400">
+          Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+        </p>
+        <div class="flex items-center gap-1">
+          {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 text-xs font-medium rounded-lg bg-white dark:bg-graydark-900 border border-graydark-200 dark:border-graydark-700 hover:bg-graydark-50 dark:hover:bg-graydark-700">
+            <i class="fa-solid fa-chevron-left"></i> Prev
+          </a>
+          {% endif %}
+          {% for n in page_obj.paginator.page_range %}
+            {% if n == page_obj.number %}
+            <span class="px-3 py-2 text-xs font-semibold rounded-lg bg-brand-600 text-white">{{ n }}</span>
+            {% elif n > page_obj.number|add:'-3' and n < page_obj.number|add:'3' %}
+            <a href="?page={{ n }}" class="px-3 py-2 text-xs font-medium rounded-lg bg-white dark:bg-graydark-900 border border-graydark-200 dark:border-graydark-700 hover:bg-graydark-50 dark:hover:bg-graydark-700">{{ n }}</a>
+            {% endif %}
+          {% endfor %}
+          {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 text-xs font-medium rounded-lg bg-white dark:bg-graydark-900 border border-graydark-200 dark:border-graydark-700 hover:bg-graydark-50 dark:hover:bg-graydark-700">
+            Next <i class="fa-solid fa-chevron-right"></i>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <footer class="text-center text-xs text-graydark-400 py-4">
+        Studio Mathri Admin Panel
+      </footer>
+    </main>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var savedTheme = localStorage.getItem('sm-theme') || 'dark';
+  if (savedTheme === 'light') {
+    document.documentElement.classList.remove('dark');
+  }
+  document.getElementById('themeToggle').addEventListener('click', function () {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('sm-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  });
+})();
+</script>
+
+</body>
+</html>

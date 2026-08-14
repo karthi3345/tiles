@@ -9,7 +9,11 @@ from django.urls import path, include
 
 urlpatterns = [
 
-    path('admin/', admin.site.urls),
+    # TailAdmin custom dashboard at /admin/
+    path('admin/', include('tiles.dashboard_urls')),
+
+    # Django default admin (model CRUD) moved to /django-admin/
+    path('django-admin/', admin.site.urls),
 
     # Home, tiles pages
     path('', include('tiles.urls')),

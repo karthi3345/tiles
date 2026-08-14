@@ -1,0 +1,38 @@
+{% extends 'tiles/sections/base_section.html' %}
+{% block content %}
+{% if page_obj %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-graydark-50 dark:bg-graydark-800/50 text-left text-graydark-400 text-xs">
+          <th class="px-5 py-3 font-semibold">Tile</th>
+          <th class="px-5 py-3 font-semibold">Quantity</th>
+          <th class="px-5 py-3 font-semibold">Price</th>
+          <th class="px-5 py-3 font-semibold">Size</th>
+          <th class="px-5 py-3 font-semibold">Order</th>
+          <th class="px-5 py-3 font-semibold">Line Total</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-graydark-100 dark:divide-graydark-800">
+        {% for oi in page_obj %}
+        <tr class="hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition">
+          <td class="px-5 py-3 font-medium text-graydark-700 dark:text-graydark-200">{{ oi.tile_name }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ oi.quantity }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ oi.price }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ oi.size_label|default:"—" }}</td>
+          <td class="px-5 py-3 text-xs font-mono text-graydark-400">{{ oi.order.order_id|truncatechars:18 }}</td>
+          <td class="px-5 py-3 font-semibold text-graydark-700 dark:text-graydark-200">{{ oi.total }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% else %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 p-10 text-center">
+  <i class="fa-solid fa-list-check text-4xl text-graydark-200 dark:text-graydark-700 mb-3"></i>
+  <p class="text-sm text-graydark-400">No order items yet</p>
+</section>
+{% endif %}
+{% endblock %}

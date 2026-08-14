@@ -1,0 +1,41 @@
+{% extends 'tiles/sections/base_section.html' %}
+{% block content %}
+{% if page_obj %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-graydark-50 dark:bg-graydark-800/50 text-left text-graydark-400 text-xs">
+          <th class="px-5 py-3 font-semibold">Payment ID</th>
+          <th class="px-5 py-3 font-semibold">Order</th>
+          <th class="px-5 py-3 font-semibold">Customer</th>
+          <th class="px-5 py-3 font-semibold">Amount</th>
+          <th class="px-5 py-3 font-semibold">Status</th>
+          <th class="px-5 py-3 font-semibold">Date</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-graydark-100 dark:divide-graydark-800">
+        {% for pm in page_obj %}
+        <tr class="hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition">
+          <td class="px-5 py-3 text-xs font-mono text-graydark-500">{{ pm.razorpay_payment_id|truncatechars:24 }}</td>
+          <td class="px-5 py-3 text-xs font-mono text-graydark-400">{{ pm.order.order_id|truncatechars:18 }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ pm.order.customer_email|default:"—" }}</td>
+          <td class="px-5 py-3 font-semibold text-graydark-700 dark:text-graydark-200">{{ pm.amount }}</td>
+          <td class="px-5 py-3">
+            {% if pm.status == 'success' %}<span class="px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10">Success</span>
+            {% else %}<span class="px-2.5 py-1 text-xs font-medium rounded-full bg-red-50 text-red-600 dark:bg-red-500/10">Failed</span>{% endif %}
+          </td>
+          <td class="px-5 py-3 text-xs text-graydark-400">{{ pm.created_at|date:"M d, Y H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% else %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 p-10 text-center">
+  <i class="fa-solid fa-credit-card text-4xl text-graydark-200 dark:text-graydark-700 mb-3"></i>
+  <p class="text-sm text-graydark-400">No payments yet</p>
+</section>
+{% endif %}
+{% endblock %}

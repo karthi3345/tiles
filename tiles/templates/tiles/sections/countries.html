@@ -1,0 +1,41 @@
+{% extends 'tiles/sections/base_section.html' %}
+{% block content %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-graydark-50 dark:bg-graydark-800/50 text-left text-graydark-400 text-xs">
+          <th class="px-5 py-3 font-semibold">#</th>
+          <th class="px-5 py-3 font-semibold">Country</th>
+          <th class="px-5 py-3 font-semibold">Continent</th>
+          <th class="px-5 py-3 font-semibold">Ranking</th>
+          <th class="px-5 py-3 font-semibold">Type</th>
+          <th class="px-5 py-3 font-semibold">Products</th>
+          <th class="px-5 py-3 font-semibold">States</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-graydark-100 dark:divide-graydark-800">
+        {% for c in page_obj %}
+        <tr class="hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition">
+          <td class="px-5 py-3 text-graydark-400">{{ forloop.counter0|add:page_obj.start_index }}</td>
+          <td class="px-5 py-3">
+            <span class="text-xl mr-2">{{ c.flag_emoji }}</span>
+            <span class="font-medium text-graydark-700 dark:text-graydark-200">{{ c.name }}</span>
+          </td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ c.continent|default:"—" }}</td>
+          <td class="px-5 py-3 font-semibold text-brand-600 dark:text-brand-300">#{{ c.ranking }}</td>
+          <td class="px-5 py-3 space-x-1">
+            {% if c.is_top_producer %}<span class="px-2 py-0.5 text-[10px] font-semibold rounded bg-blue-50 text-blue-600 dark:bg-blue-500/10">Producer</span>{% endif %}
+            {% if c.is_top_consumer %}<span class="px-2 py-0.5 text-[10px] font-semibold rounded bg-orange-50 text-orange-600 dark:bg-orange-500/10">Consumer</span>{% endif %}
+          </td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ c.pc }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ c.states.count }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="px-5 py-10 text-center text-graydark-400">No countries</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

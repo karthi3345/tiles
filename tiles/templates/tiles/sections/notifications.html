@@ -1,0 +1,31 @@
+{% extends 'tiles/sections/base_section.html' %}
+{% block content %}
+<section class="bg-white dark:bg-graydark-900 rounded-2xl border border-graydark-100 dark:border-graydark-800 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-graydark-50 dark:bg-graydark-800/50 text-left text-graydark-400 text-xs">
+          <th class="px-5 py-3 font-semibold">Type</th>
+          <th class="px-5 py-3 font-semibold">Message</th>
+          <th class="px-5 py-3 font-semibold">User</th>
+          <th class="px-5 py-3 font-semibold">Read</th>
+          <th class="px-5 py-3 font-semibold">Created</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-graydark-100 dark:divide-graydark-800">
+        {% for n in page_obj %}
+        <tr class="hover:bg-graydark-50 dark:hover:bg-graydark-800/30 transition {% if not n.is_read %}bg-brand-25/60 dark:bg-brand-600/5{% endif %}">
+          <td class="px-5 py-3"><span class="px-2 py-0.5 text-[10px] font-semibold rounded bg-graydark-100 dark:bg-graydark-800 text-graydark-500">{{ n.notif_type }}</span></td>
+          <td class="px-5 py-3 max-w-lg text-[13px] text-graydark-600 dark:text-graydark-300">{{ n.message|truncatechars:140 }}</td>
+          <td class="px-5 py-3 text-graydark-500 dark:text-graydark-400">{{ n.user.email }}</td>
+          <td class="px-5 py-3">{% if n.is_read %}<span class="px-2.5 py-1 text-xs font-medium rounded-full bg-graydark-100 text-graydark-500 dark:bg-graydark-700">Read</span>{% else %}<span class="px-2.5 py-1 text-xs font-medium rounded-full bg-blue-50 text-blue-600 dark:bg-blue-500/10">Unread</span>{% endif %}</td>
+          <td class="px-5 py-3 text-xs text-graydark-400">{{ n.created_at|date:"M d, H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-5 py-10 text-center text-graydark-400">No notifications</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
