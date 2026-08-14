@@ -378,6 +378,24 @@ class UserProfile(models.Model):
         null=True
     )
 
+    country = models.ForeignKey(
+        Country,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="users",
+        verbose_name="Country"
+    )
+
+    city = models.ForeignKey(
+        City,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="users",
+        verbose_name="City"
+    )
+
     created_at = models.DateTimeField(
         auto_now_add=True
     )

@@ -33,23 +33,6 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     {% block extra_head %}{% endblock %}
 </head>
-<script>
-
-const mobileBtn = document.getElementById("mobile-btn");
-const mobileMenu = document.getElementById("mobile-menu");
-
-
-if(mobileBtn){
-
-mobileBtn.addEventListener("click",()=>{
-
-    mobileMenu.classList.toggle("hidden");
-
-});
-
-}
-
-</script>
 <body class="bg-white font-sans text-slate-900 antialiased">
 
     {% include 'tiles/components/navbar.html' %}

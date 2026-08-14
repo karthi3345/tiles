@@ -198,7 +198,7 @@ def profile(request):
             Notification.objects.create(
                 user=request.user,
                 notif_type='general',
-                message="Profile picture updated successfully!",
+                message="Profile updated successfully!",
                 related_url='/accounts/profile/',
             )
 
@@ -210,13 +210,26 @@ def profile(request):
             instance=profile
         )
 
+    # Countries + cities for the location pickers
+    from tiles.models import Country, City
+    countries = Country.objects.all().order_by("name")
+    cities_by_country = {}
+    for c in countries:
+        cities_by_country[c.id] = list(
+            City.objects.filter(state__country=c)
+            .values("id", "name", "state__name")
+            .order_by("name")
+        )
+
 
     return render(
         request,
         "tiles/accounts/profile.html",
         {
             "form": form,
-            "profile": profile
+            "profile": profile,
+            "countries": countries,
+            "cities_by_country": cities_by_country,
         }
     )
 

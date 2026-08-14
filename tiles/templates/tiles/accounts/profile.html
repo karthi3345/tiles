@@ -73,7 +73,78 @@ Update Picture
 </div>
 
 
+<!-- Location -->
+<div class="mt-6 pt-6 border-t border-slate-200">
+
+<h2 class="text-lg font-bold text-slate-900 mb-1">My Location</h2>
+
+<p class="text-sm text-slate-500 mb-4">Shown on the coverage map so others can find tile lovers near you.</p>
+
+<label class="block text-sm font-medium text-slate-700 mb-2">
+Country
+</label>
+
+<select id="profile-country" name="country" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none bg-white">
+<option value="">Select your country</option>
+{% for c in countries %}
+<option value="{{ c.id }}" {% if profile.country_id == c.id %}selected{% endif %}>{{ c.flag_emoji }} {{ c.name }}</option>
+{% endfor %}
+</select>
+
+<label class="block text-sm font-medium text-slate-700 mb-2 mt-4">
+City
+</label>
+
+<select id="profile-city" name="city" class="w-full px-3 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none bg-white">
+<option value="">Select your city</option>
+{% if profile.city %}
+<option value="{{ profile.city.id }}" selected>{{ profile.city.name }}</option>
+{% endif %}
+</select>
+
+<p id="city-hint" class="text-xs text-slate-400 mt-2">Pick a country first to load its cities.</p>
+
+</div>
+
+
 </form>
+
+
+{{ cities_by_country|json_script:"cities-by-country" }}
+
+<script>
+(function () {
+  "use strict";
+  var raw = document.getElementById('cities-by-country');
+  var data = {};
+  try { data = JSON.parse(raw.textContent || '{}'); } catch (e) { data = {}; }
+  var countrySel = document.getElementById('profile-country');
+  var citySel = document.getElementById('profile-city');
+  var hint = document.getElementById('city-hint');
+  var currentCity = "{{ profile.city_id|default:'' }}";
+
+  function fillCities(countryId) {
+    citySel.innerHTML = '<option value="">Select your city</option>';
+    var cities = data[countryId] || [];
+    cities.forEach(function (c) {
+      var opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name + ' — ' + c.state__name;
+      if (String(c.id) === currentCity) { opt.selected = true; }
+      citySel.appendChild(opt);
+    });
+    hint.textContent = cities.length
+      ? cities.length + ' cities available'
+      : 'Pick a country first to load its cities.';
+  }
+
+  if (countrySel.value) { fillCities(countrySel.value); }
+
+  countrySel.addEventListener('change', function () {
+    fillCities(countrySel.value);
+  });
+})();
+</script>
 
 
 </div>
