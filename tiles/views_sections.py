@@ -282,3 +282,16 @@ def section_payments(request):
         qs = qs.filter(Q(razorpay_payment_id__icontains=q) | Q(order__order_id__icontains=q))
     return render(request, 'tiles/sections/payments.html',
                   _base_ctx('payments', 'Payments', 'fa-credit-card', 'Razorpay payments', _paginate(request, qs)))
+
+
+# ───────────────────────── Excel export ─────────────────────────
+
+@staff_member_required(login_url='/admin/login/')
+def section_export(request, section):
+    """Stream the section's data as an .xlsx download (honors ?q= filter)."""
+    from . import export
+    try:
+        return export.export_response(section, request.GET.get('q', '').strip())
+    except KeyError:
+        from django.http import Http404
+        raise Http404('Unknown section')

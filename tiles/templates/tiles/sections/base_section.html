@@ -191,11 +191,17 @@
           </h1>
           {% if section_desc %}<p class="text-[13px] text-graydark-400 mt-1">{{ section_desc }}{% if title_extra %} · {{ title_extra }}{% endif %}</p>{% endif %}
         </div>
-        <nav class="text-[13px] text-graydark-400">
-          <a href="/admin/" class="hover:text-brand-600">Dashboard</a>
-          <i class="fa-solid fa-chevron-right text-[8px] mx-1"></i>
-          <span>{{ section_label }}</span>
-        </nav>
+        <div class="flex items-center gap-3">
+          <nav class="text-[13px] text-graydark-400">
+            <a href="/admin/" class="hover:text-brand-600">Dashboard</a>
+            <i class="fa-solid fa-chevron-right text-[8px] mx-1"></i>
+            <span>{{ section_label }}</span>
+          </nav>
+          <a href="/admin/section/{{ section }}/export/{% if request.GET.q %}?q={{ request.GET.q|urlencode }}{% endif %}"
+             class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition shadow-sm">
+            <i class="fa-solid fa-file-excel"></i> Export Excel
+          </a>
+        </div>
       </div>
 
       <!-- Record count bar -->

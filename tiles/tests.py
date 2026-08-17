@@ -653,3 +653,171 @@ class OrderDeliveryNotificationTest(TestCase):
         self.client.post(f'/orders/{self.order.id}/update-status/', {'status': 'shipped'})
         count_after_second = Notification.objects.filter(user=self.customer).count()
         self.assertEqual(count_after_first, count_after_second)
+
+
+# ─────────── EXCEL EXPORT TESTS ───────────
+
+import io
+
+from django.contrib.auth.models import User as DjangoUser
+from openpyxl import load_workbook
+from tiles import export as export_mod
+
+
+class ExcelExportUnitTest(TestCase):
+    """Unit tests for the export helpers."""
+
+    def test_sheet_name_sanitizes_invalid_chars(self):
+        self.assertEqual(export_mod._sheet_name('Areas/Villages: Test'), 'Areas-Villages- Test')
+        self.assertEqual(export_mod._sheet_name('a[b]c*d?e/f\\g'), 'a-b-c-d-e-f-g')
+
+    def test_sheet_name_truncates_to_31_chars(self):
+        self.assertEqual(len(export_mod._sheet_name('x' * 100)), 31)
+
+    def test_sheet_name_empty_falls_back(self):
+        self.assertEqual(export_mod._sheet_name('///'), '---')
+        self.assertEqual(export_mod._sheet_name(''), 'Sheet')
+
+    def test_yesno(self):
+        self.assertEqual(export_mod._yesno(True), 'Yes')
+        self.assertEqual(export_mod._yesno(False), 'No')
+
+    def test_dt_none_returns_empty(self):
+        self.assertEqual(export_mod._dt(None), '')
+
+    def test_columns_headers_and_rows(self):
+        cols = export_mod.Columns([('A', lambda o: o * 2), ('B', lambda o: f'v{o}')])
+        self.assertEqual(cols.headers, ['A', 'B'])
+        self.assertEqual(cols.row_for(3), [6, 'v3'])
+
+    def test_every_dashboard_section_has_export_spec(self):
+        """All 20 sections the dashboard exposes must be exportable."""
+        expected = {
+            'countries', 'states', 'cities', 'villages',
+            'categories', 'effects', 'finishes', 'sizes',
+            'products', 'showrooms', 'insights',
+            'chats', 'messages', 'images',
+            'users', 'profiles', 'notifications',
+            'orders', 'order-items', 'payments',
+        }
+        for section in expected:
+            self.assertIsNotNone(
+                export_mod._spec(section),
+                f'No export spec for section {section!r}')
+
+
+class ExcelExportIntegrationTest(TestCase):
+    """Integration tests for /admin/section/<section>/export/."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.staff = User.objects.create_user(
+            username='staff_export', password='StaffPass123!',
+            email='staff_export@test.com', is_staff=True,
+        )
+        cls.country = Country.objects.create(
+            name='ExportCountry', slug='export-country',
+            flag_emoji='🏳', continent='TestLand',
+        )
+        cls.category = TileCategory.objects.create(
+            name='Export Tiles', slug='export-tiles')
+        cls.tile = TileProduct.objects.create(
+            name='Export Marble', slug='export-marble',
+            category=cls.category,
+            price_range_min=Decimal('100.00'),
+            price_range_max=Decimal('200.00'),
+        )
+        cls.tile2 = TileProduct.objects.create(
+            name='Granite Special', slug='granite-special',
+            category=cls.category,
+            price_range_min=Decimal('50.00'),
+            price_range_max=Decimal('90.00'),
+        )
+
+    def setUp(self):
+        self.client = Client()
+        self.client.login(username='staff_export', password='StaffPass123!')
+
+    def _xlsx(self, resp):
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(
+            resp['Content-Type'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        self.assertIn('attachment; filename="products_', resp['Content-Disposition'])
+        self.assertIn('.xlsx"', resp['Content-Disposition'])
+        return load_workbook(io.BytesIO(resp.content))
+
+    def test_staff_export_products_returns_valid_xlsx(self):
+        resp = self.client.get('/admin/section/products/export/')
+        wb = self._xlsx(resp)
+        ws = wb.active
+        # Header + 2 data rows
+        self.assertEqual(ws.max_row, 3)
+        self.assertEqual(
+            [c.value for c in ws[1]],
+            ['Name', 'Category', 'Material', 'Price Min', 'Price Max',
+             'Featured', 'Active', 'Created'])
+        prices = {ws.cell(row=r, column=4).value for r in (2, 3)}
+        self.assertEqual(prices, {100.0, 50.0})  # native numbers
+        names = {ws.cell(row=r, column=1).value for r in (2, 3)}
+        self.assertEqual(names, {'Export Marble', 'Granite Special'})
+        self.assertEqual(ws.freeze_panes, 'A2')
+
+    def test_export_honors_q_filter(self):
+        resp = self.client.get('/admin/section/products/export/', {'q': 'marble'})
+        wb = self._xlsx(resp)
+        ws = wb.active
+        self.assertEqual(ws.max_row, 2)  # header + 1 match only
+        self.assertEqual(ws.cell(row=2, column=1).value, 'Export Marble')
+
+    def test_export_countries_row_counts_match_db(self):
+        resp = self.client.get('/admin/section/countries/export/')
+        self.assertEqual(resp.status_code, 200)
+        wb = load_workbook(io.BytesIO(resp.content))
+        ws = wb.active
+        self.assertEqual(ws.title, 'Countries')
+        self.assertEqual(ws.max_row, 1 + Country.objects.count())
+
+    def test_export_all_sections_ok(self):
+        """Every dashboard section exports 200 with an xlsx workbook (header row)."""
+        for section in ('countries', 'states', 'cities', 'villages',
+                        'categories', 'effects', 'finishes', 'sizes',
+                        'products', 'showrooms', 'insights',
+                        'chats', 'messages', 'images',
+                        'users', 'profiles', 'notifications',
+                        'orders', 'order-items', 'payments'):
+            resp = self.client.get(f'/admin/section/{section}/export/')
+            self.assertEqual(resp.status_code, 200, section)
+            wb = load_workbook(io.BytesIO(resp.content))
+            self.assertTrue(wb.active.max_row >= 1, f'{section} header row')
+
+    def test_anonymous_export_redirects_to_login(self):
+        self.client.logout()
+        resp = self.client.get('/admin/section/products/export/')
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/admin/login/', resp.url)
+
+    def test_non_staff_export_redirects_to_login(self):
+        User.objects.create_user(username='plainuser', password='PlainPass123!')
+        self.client.login(username='plainuser', password='PlainPass123!')
+        resp = self.client.get('/admin/section/products/export/')
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/admin/login/', resp.url)
+
+    def test_unknown_section_returns_404(self):
+        resp = self.client.get('/admin/section/not-a-section/export/')
+        self.assertEqual(resp.status_code, 404)
+
+    def test_export_button_on_section_page(self):
+        resp = self.client.get('/admin/section/products/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Export Excel')
+        self.assertContains(resp, '/admin/section/products/export/')
+
+    def test_export_users_sheet_includes_staff(self):
+        resp = self.client.get('/admin/section/users/export/')
+        self.assertEqual(resp.status_code, 200)
+        wb = load_workbook(io.BytesIO(resp.content))
+        ws = wb.active
+        emails = [ws.cell(row=r, column=1).value for r in range(2, ws.max_row + 1)]
+        self.assertIn('staff_export@test.com', emails)
