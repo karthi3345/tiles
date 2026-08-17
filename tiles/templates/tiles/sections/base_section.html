@@ -198,6 +198,7 @@
             <span>{{ section_label }}</span>
           </nav>
           <a href="/admin/section/{{ section }}/export/{% if request.GET.q %}?q={{ request.GET.q|urlencode }}{% endif %}"
+             target="_blank" rel="noopener"
              class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition shadow-sm">
             <i class="fa-solid fa-file-excel"></i> Export Excel
           </a>
@@ -206,7 +207,7 @@
 
       <!-- Record count bar -->
       <div class="flex items-center gap-3 text-sm">
-        <span class="px-3 py-1.5 rounded-full bg-brand-50 dark:bg-brand-600/10 text-brand-600 dark:text-brand-300 font-semibold text-xs">
+        <span data-records-count class="px-3 py-1.5 rounded-full bg-brand-50 dark:bg-brand-600/10 text-brand-600 dark:text-brand-300 font-semibold text-xs">
           {{ page_obj.paginator.count }} records
         </span>
         {% if page_obj.has_other_pages %}
@@ -218,6 +219,7 @@
       {% block content %}{% endblock %}
 
       <!-- Pagination -->
+      <div data-section-footer>
       {% if page_obj.has_other_pages %}
       <div class="flex items-center justify-between flex-wrap gap-3">
         <p class="text-xs text-graydark-400">
@@ -244,6 +246,7 @@
         </div>
       </div>
       {% endif %}
+      </div>
 
       <footer class="text-center text-xs text-graydark-400 py-4">
         Studio Mathri Admin Panel

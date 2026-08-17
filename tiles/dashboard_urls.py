@@ -36,6 +36,9 @@ urlpatterns = [
     # Excel export for any section (staff-only)
     path('section/<str:section>/export/', views_sections.section_export, name='section_export'),
 
+    # Add Product (AJAX, staff-only)
+    path('section/products/add/', views_sections.product_add, name='product_add'),
+
     # Login/logout using Django's built-in admin auth views so the
     # dashboard's staff gate works at the new mount point.
     path('login/', views_dashboard.admin_login_view, name='login'),

@@ -128,8 +128,9 @@ def section_products(request):
     q = request.GET.get('q', '').strip()
     if q:
         qs = qs.filter(Q(name__icontains=q) | Q(material__icontains=q) | Q(category__name__icontains=q))
-    return render(request, 'tiles/sections/products.html',
-                  _base_ctx('products', 'Products', 'fa-box', 'Tile product catalog', _paginate(request, qs)))
+    ctx = _base_ctx('products', 'Products', 'fa-box', 'Tile product catalog', _paginate(request, qs))
+    ctx['categories'] = TileCategory.objects.all().order_by('sort_order', 'name')
+    return render(request, 'tiles/sections/products.html', ctx)
 
 
 @staff_member_required(login_url='/admin/login/')
@@ -295,3 +296,66 @@ def section_export(request, section):
     except KeyError:
         from django.http import Http404
         raise Http404('Unknown section')
+
+
+# ───────────────────────── Add Product (dynamic) ─────────────────────────
+
+@staff_member_required(login_url='/admin/login/')
+def product_add(request):
+    """AJAX create a TileProduct. POST only, returns JSON."""
+    import json
+    from decimal import Decimal, InvalidOperation
+    from django import forms
+    from django.http import JsonResponse
+    from django.views.decorators.http import require_POST
+
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'POST required'}, status=405)
+
+    class ProductForm(forms.Form):
+        name = forms.CharField(max_length=300, required=True)
+        category = forms.ModelChoiceField(
+            queryset=TileCategory.objects.all(), required=False)
+        material = forms.CharField(max_length=100, required=False)
+        price_min = forms.DecimalField(
+            min_value=0, max_digits=8, decimal_places=2, required=True)
+        price_max = forms.DecimalField(
+            min_value=0, max_digits=8, decimal_places=2, required=True)
+        description = forms.CharField(required=False)
+        image = forms.URLField(required=False)
+        is_featured = forms.BooleanField(required=False)
+        is_active = forms.BooleanField(required=False)
+
+    form = ProductForm(request.POST)
+    if not form.is_valid():
+        return JsonResponse({'ok': False, 'errors': form.errors}, status=400)
+
+    data = form.cleaned_data
+    if data['price_max'] < data['price_min']:
+        return JsonResponse({'ok': False, 'errors': {
+            'price_max': ['Price max must be greater than or equal to price min.']
+        }}, status=400)
+
+    from django.utils.text import slugify
+    base_slug = slugify(data['name']) or 'tile'
+    slug = base_slug
+    suffix = 2
+    while TileProduct.objects.filter(slug=slug).exists():
+        slug = f'{base_slug}-{suffix}'
+        suffix += 1
+
+    product = TileProduct.objects.create(
+        name=data['name'],
+        slug=slug,
+        category=data['category'],
+        material=data['material'] or '',
+        price_range_min=data['price_min'],
+        price_range_max=data['price_max'],
+        description=data['description'] or '',
+        image=data['image'] or None,
+        is_featured=data['is_featured'],
+        is_active=data['is_active'],
+    )
+    return JsonResponse({
+        'ok': True, 'id': product.id, 'name': product.name, 'slug': product.slug,
+    })

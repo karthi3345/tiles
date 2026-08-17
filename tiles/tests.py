@@ -821,3 +821,134 @@ class ExcelExportIntegrationTest(TestCase):
         ws = wb.active
         emails = [ws.cell(row=r, column=1).value for r in range(2, ws.max_row + 1)]
         self.assertIn('staff_export@test.com', emails)
+
+
+# ─────────── ADD PRODUCT (DYNAMIC) TESTS ───────────
+
+
+class AddProductIntegrationTest(TestCase):
+    """Integration tests for POST /admin/section/products/add/."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.staff = User.objects.create_user(
+            username='staff_addprod', password='StaffPass123!',
+            email='staff_addprod@test.com', is_staff=True,
+        )
+        cls.category = TileCategory.objects.create(
+            name='Add Tiles', slug='add-tiles')
+
+    def setUp(self):
+        self.client = Client()
+        self.client.login(username='staff_addprod', password='StaffPass123!')
+
+    def _post(self, **fields):
+        return self.client.post('/admin/section/products/add/', fields)
+
+    def test_valid_create_returns_ok_json(self):
+        before = TileProduct.objects.count()
+        resp = self._post(
+            name='Brand New Tile', category=self.category.id,
+            material='Porcelain', price_min='10.50', price_max='20.00',
+            description='Nice tile', image='https://example.com/t.jpg',
+            is_active='on',
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data['ok'])
+        self.assertEqual(data['name'], 'Brand New Tile')
+        self.assertEqual(TileProduct.objects.count(), before + 1)
+        p = TileProduct.objects.get(id=data['id'])
+        self.assertEqual(p.slug, 'brand-new-tile')
+        self.assertEqual(float(p.price_range_min), 10.50)
+        self.assertEqual(float(p.price_range_max), 20.00)
+        self.assertTrue(p.is_active)
+        self.assertFalse(p.is_featured)
+
+    def test_unchecked_active_creates_inactive_product(self):
+        resp = self._post(name='Inactive Tile', price_min='1', price_max='2')
+        p = TileProduct.objects.get(id=resp.json()['id'])
+        self.assertFalse(p.is_active)
+
+    def test_missing_name_returns_400_field_error(self):
+        before = TileProduct.objects.count()
+        resp = self._post(name='', price_min='1', price_max='2')
+        self.assertEqual(resp.status_code, 400)
+        data = resp.json()
+        self.assertFalse(data['ok'])
+        self.assertIn('name', data['errors'])
+        self.assertEqual(TileProduct.objects.count(), before)
+
+    def test_price_max_below_min_returns_400(self):
+        resp = self._post(name='Bad Tile', price_min='100', price_max='50')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('price_max', resp.json()['errors'])
+        self.assertFalse(TileProduct.objects.filter(name='Bad Tile').exists())
+
+    def test_invalid_price_returns_400(self):
+        resp = self._post(name='Tile X', price_min='abc', price_max='5')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('price_min', resp.json()['errors'])
+
+    def test_negative_price_returns_400(self):
+        resp = self._post(name='Tile Neg', price_min='-5', price_max='5')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('price_min', resp.json()['errors'])
+
+    def test_invalid_image_url_returns_400(self):
+        resp = self._post(name='Tile URL', price_min='1', price_max='2',
+                          image='not-a-url')
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn('image', resp.json()['errors'])
+
+    def test_duplicate_name_gets_unique_slug(self):
+        self._post(name='Dup Tile', price_min='1', price_max='2')
+        resp = self._post(name='Dup Tile', price_min='1', price_max='2')
+        self.assertEqual(resp.status_code, 200)
+        slugs = set(TileProduct.objects.filter(name='Dup Tile')
+                    .values_list('slug', flat=True))
+        self.assertEqual(len(slugs), 2)  # both saved, slugs differ
+
+    def test_get_returns_405(self):
+        resp = self.client.get('/admin/section/products/add/')
+        self.assertEqual(resp.status_code, 405)
+
+    def test_anonymous_post_redirects_to_login(self):
+        self.client.logout()
+        resp = self.client.post('/admin/section/products/add/', {'name': 'x'})
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/admin/login/', resp.url)
+
+    def test_non_staff_post_redirects_to_login(self):
+        User.objects.create_user(username='plain_add', password='PlainPass123!')
+        self.client.login(username='plain_add', password='PlainPass123!')
+        resp = self.client.post('/admin/section/products/add/', {'name': 'x'})
+        self.assertEqual(resp.status_code, 302)
+
+    def test_add_product_button_and_modal_on_page(self):
+        resp = self.client.get('/admin/section/products/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Add Product')
+        self.assertContains(resp, '/admin/section/products/add/')
+        self.assertContains(resp, 'open-add-product')
+
+    def test_add_product_button_not_on_other_sections(self):
+        for section in ('users', 'countries', 'cities'):
+            resp = self.client.get(f'/admin/section/{section}/')
+            self.assertNotContains(resp, 'open-add-product', msg_prefix=section)
+
+    def test_categories_dropdown_populated(self):
+        resp = self.client.get('/admin/section/products/')
+        self.assertContains(resp, 'Add Tiles')  # category name in dropdown
+
+    def test_dashboard_export_and_add_buttons_wired(self):
+        resp = self.client.get('/admin/')
+        self.assertEqual(resp.status_code, 200)
+        # Export → products xlsx download
+        self.assertContains(resp, 'href="/admin/section/products/export/"')
+        # Add Product → products page with modal auto-open
+        self.assertContains(resp, 'href="/admin/section/products/?add=1"')
+
+    def test_products_page_has_add1_autolaunch(self):
+        resp = self.client.get('/admin/section/products/')
+        self.assertContains(resp, "get('add') === '1'")
