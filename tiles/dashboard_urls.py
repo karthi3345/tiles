@@ -33,6 +33,9 @@ urlpatterns = [
     path('section/order-items/', views_sections.section_order_items, name='section_order_items'),
     path('section/payments/', views_sections.section_payments, name='section_payments'),
 
+    # Global search (staff-only)
+    path('search/', views_sections.global_search, name='global_search'),
+
     # Excel export for any section (staff-only)
     path('section/<str:section>/export/', views_sections.section_export, name='section_export'),
 

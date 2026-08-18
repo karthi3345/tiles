@@ -1,0 +1,47 @@
+{% extends 'tiles/sections/base_section.html' %}
+{% block content %}
+
+{% if not q %}
+<!-- Empty query — hint -->
+<div class="bg-white dark:bg-graydark-900 border border-graydark-200 dark:border-graydark-700 rounded-2xl p-10 text-center">
+  <i class="fa-solid fa-magnifying-glass text-3xl text-graydark-300 dark:text-graydark-600 mb-3"></i>
+  <p class="text-sm font-semibold text-graydark-700 dark:text-graydark-200">Type a search term above and press Enter</p>
+  <p class="text-xs text-graydark-400 mt-1">Searches products, categories, locations, users and orders at once.</p>
+</div>
+{% elif page_obj.object_list %}
+<!-- Grouped results -->
+<div class="space-y-4">
+  {% regroup page_obj.object_list by section_label as grouped %}
+  {% for group in grouped %}
+  <div class="bg-white dark:bg-graydark-900 border border-graydark-200 dark:border-graydark-700 rounded-2xl overflow-hidden">
+    <div class="px-4 py-3 border-b border-graydark-100 dark:border-graydark-800 flex items-center justify-between">
+      <p class="text-xs font-bold uppercase tracking-wider text-graydark-500 dark:text-graydark-400 flex items-center gap-2">
+        <i class="fa-solid {{ group.list.0.icon }}"></i>
+        {{ group.grouper }}
+      </p>
+      <span class="text-[11px] text-graydark-400">{{ group.list|length }} match{{ group.list|length|pluralize }}</span>
+    </div>
+    <ul class="divide-y divide-graydark-100 dark:divide-graydark-800">
+      {% for r in group.list %}
+      <li>
+        <a href="{{ r.url }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-graydark-700 dark:text-graydark-200 hover:bg-graydark-50 dark:hover:bg-graydark-800 transition">
+          <i class="fa-solid {{ r.icon }} w-5 text-center text-brand-500"></i>
+          <span class="flex-1 min-w-0 truncate">{{ r.text }}</span>
+          <i class="fa-solid fa-arrow-right text-[10px] text-graydark-300 dark:text-graydark-600"></i>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<!-- No results -->
+<div class="bg-white dark:bg-graydark-900 border border-graydark-200 dark:border-graydark-700 rounded-2xl p-10 text-center">
+  <i class="fa-solid fa-face-frown text-3xl text-graydark-300 dark:text-graydark-600 mb-3"></i>
+  <p class="text-sm font-semibold text-graydark-700 dark:text-graydark-200">No results for “{{ q }}”</p>
+  <p class="text-xs text-graydark-400 mt-1">Try a different term, or browse a section from the sidebar.</p>
+</div>
+{% endif %}
+
+{% endblock %}

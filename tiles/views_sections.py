@@ -88,8 +88,12 @@ def section_countries(request):
         pc=Count('tile_products'),
         sc=Count('states', distinct=True),
     ).order_by('ranking')
-    return render(request, 'tiles/sections/countries.html',
-                  _base_ctx('countries', 'Countries', 'fa-globe', 'Global tile markets', _paginate(request, qs)))
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(Q(name__icontains=q) | Q(continent__icontains=q))
+    ctx = _base_ctx('countries', 'Countries', 'fa-globe', 'Global tile markets', _paginate(request, qs))
+    ctx['search'] = q
+    return render(request, 'tiles/sections/countries.html', ctx)
 
 
 @staff_member_required(login_url='/admin/login/')
@@ -97,8 +101,12 @@ def section_states(request):
     qs = State.objects.select_related('country').annotate(
         num_cities=Count('cities'),
     ).order_by('country__name', 'name')
-    return render(request, 'tiles/sections/states.html',
-                  _base_ctx('states', 'States', 'fa-map-location-dot', 'States / provinces', _paginate(request, qs)))
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(Q(name__icontains=q) | Q(country__name__icontains=q))
+    ctx = _base_ctx('states', 'States', 'fa-map-location-dot', 'States / provinces', _paginate(request, qs))
+    ctx['search'] = q
+    return render(request, 'tiles/sections/states.html', ctx)
 
 
 @staff_member_required(login_url='/admin/login/')
@@ -116,8 +124,12 @@ def section_villages(request):
     qs = Village.objects.select_related('city__state__country').annotate(
         showroom_count=Count('showrooms'),
     ).order_by('city__name', 'name')
-    return render(request, 'tiles/sections/villages.html',
-                  _base_ctx('villages', 'Areas / Villages', 'fa-map-pin', 'Local areas and villages', _paginate(request, qs)))
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(Q(name__icontains=q) | Q(pincode__icontains=q) | Q(city__name__icontains=q))
+    ctx = _base_ctx('villages', 'Areas / Villages', 'fa-map-pin', 'Local areas and villages', _paginate(request, qs))
+    ctx['search'] = q
+    return render(request, 'tiles/sections/villages.html', ctx)
 
 
 # ───────────────────────── Catalog ─────────────────────────
@@ -136,29 +148,45 @@ def section_products(request):
 @staff_member_required(login_url='/admin/login/')
 def section_categories(request):
     qs = TileCategory.objects.annotate(product_count=Count('products')).order_by('sort_order', 'name')
-    return render(request, 'tiles/sections/categories.html',
-                  _base_ctx('categories', 'Categories', 'fa-shapes', 'Product categories', _paginate(request, qs)))
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(name__icontains=q)
+    ctx = _base_ctx('categories', 'Categories', 'fa-shapes', 'Product categories', _paginate(request, qs))
+    ctx['search'] = q
+    return render(request, 'tiles/sections/categories.html', ctx)
 
 
 @staff_member_required(login_url='/admin/login/')
 def section_effects(request):
     qs = TileEffect.objects.annotate(product_count=Count('products')).order_by('name')
-    return render(request, 'tiles/sections/effects.html',
-                  _base_ctx('effects', 'Effects', 'fa-wand-magic-sparkles', 'Tile visual effects', _paginate(request, qs)))
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(name__icontains=q)
+    ctx = _base_ctx('effects', 'Effects', 'fa-wand-magic-sparkles', 'Tile visual effects', _paginate(request, qs))
+    ctx['search'] = q
+    return render(request, 'tiles/sections/effects.html', ctx)
 
 
 @staff_member_required(login_url='/admin/login/')
 def section_finishes(request):
     qs = TileFinish.objects.annotate(product_count=Count('products')).order_by('name')
-    return render(request, 'tiles/sections/finishes.html',
-                  _base_ctx('finishes', 'Finishes', 'fa-gem', 'Tile finishes', _paginate(request, qs)))
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(name__icontains=q)
+    ctx = _base_ctx('finishes', 'Finishes', 'fa-gem', 'Tile finishes', _paginate(request, qs))
+    ctx['search'] = q
+    return render(request, 'tiles/sections/finishes.html', ctx)
 
 
 @staff_member_required(login_url='/admin/login/')
 def section_sizes(request):
     qs = TileSize.objects.annotate(product_count=Count('products')).order_by('width_mm', 'height_mm')
-    return render(request, 'tiles/sections/sizes.html',
-                  _base_ctx('sizes', 'Sizes', 'fa-ruler-combined', 'Tile size options', _paginate(request, qs)))
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(size_label__icontains=q)
+    ctx = _base_ctx('sizes', 'Sizes', 'fa-ruler-combined', 'Tile size options', _paginate(request, qs))
+    ctx['search'] = q
+    return render(request, 'tiles/sections/sizes.html', ctx)
 
 
 @staff_member_required(login_url='/admin/login/')
@@ -166,15 +194,23 @@ def section_showrooms(request):
     qs = TileShowroom.objects.select_related('village__city__state__country').annotate(
         product_count=Count('products'),
     ).order_by('name')
-    return render(request, 'tiles/sections/showrooms.html',
-                  _base_ctx('showrooms', 'Showrooms', 'fa-store', 'Physical store locations', _paginate(request, qs)))
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(Q(name__icontains=q) | Q(address__icontains=q) | Q(phone__icontains=q) | Q(village__name__icontains=q))
+    ctx = _base_ctx('showrooms', 'Showrooms', 'fa-store', 'Physical store locations', _paginate(request, qs))
+    ctx['search'] = q
+    return render(request, 'tiles/sections/showrooms.html', ctx)
 
 
 @staff_member_required(login_url='/admin/login/')
 def section_insights(request):
     qs = MarketInsight.objects.select_related('country').order_by('-year', 'country__name')
-    return render(request, 'tiles/sections/insights.html',
-                  _base_ctx('insights', 'Market Insights', 'fa-chart-line', 'Country market intelligence', _paginate(request, qs)))
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(Q(title__icontains=q) | Q(content__icontains=q) | Q(country__name__icontains=q))
+    ctx = _base_ctx('insights', 'Market Insights', 'fa-chart-line', 'Country market intelligence', _paginate(request, qs))
+    ctx['search'] = q
+    return render(request, 'tiles/sections/insights.html', ctx)
 
 
 # ───────────────────────── AI ─────────────────────────
@@ -182,8 +218,12 @@ def section_insights(request):
 @staff_member_required(login_url='/admin/login/')
 def section_chats(request):
     qs = ChatSession.objects.annotate(message_count=Count('messages')).order_by('-updated_at')
-    return render(request, 'tiles/sections/chats.html',
-                  _base_ctx('chats', 'Chat Sessions', 'fa-comments', 'AI assistant conversations', _paginate(request, qs)))
+    q = request.GET.get('q', '').strip()
+    if q:
+        qs = qs.filter(Q(session_id__icontains=q) | Q(title__icontains=q))
+    ctx = _base_ctx('chats', 'Chat Sessions', 'fa-comments', 'AI assistant conversations', _paginate(request, qs))
+    ctx['search'] = q
+    return render(request, 'tiles/sections/chats.html', ctx)
 
 
 @staff_member_required(login_url='/admin/login/')
@@ -283,6 +323,114 @@ def section_payments(request):
         qs = qs.filter(Q(razorpay_payment_id__icontains=q) | Q(order__order_id__icontains=q))
     return render(request, 'tiles/sections/payments.html',
                   _base_ctx('payments', 'Payments', 'fa-credit-card', 'Razorpay payments', _paginate(request, qs)))
+
+
+# ───────────────────────── Global search ─────────────────────────
+
+@staff_member_required(login_url='/admin/login/')
+def global_search(request):
+    """Global search across admin sections — linked from the dashboard header."""
+    from django.utils.http import urlencode
+    from django.urls import reverse
+
+    q = request.GET.get('q', '').strip()
+
+    def _rows():
+        """Flat result rows: one per matching object, in section priority order."""
+        rows = []
+
+        def add(section, label, icon, text, obj=None):
+            rows.append({
+                'section': section,
+                'section_label': label,
+                'icon': icon,
+                'text': str(text)[:120],
+                'url': f'/admin/section/{section}/?{urlencode({"q": q})}',
+            })
+
+        def add_many(section, label, icon, values, text_fn):
+            for v in values:
+                add(section, label, icon, text_fn(v), v)
+
+        if not q:
+            return rows
+
+        add_many('products', 'Products', 'fa-box',
+                 TileProduct.objects.filter(
+                     Q(name__icontains=q) | Q(material__icontains=q) |
+                     Q(category__name__icontains=q)
+                 ).order_by('name'),
+                 lambda p: f'{p.name} — {p.material or "tile"}')
+        add_many('categories', 'Categories', 'fa-shapes',
+                 TileCategory.objects.filter(name__icontains=q).order_by('name'),
+                 lambda c: c.name)
+        add_many('effects', 'Effects', 'fa-wand-magic-sparkles',
+                 TileEffect.objects.filter(name__icontains=q).order_by('name'),
+                 lambda e: e.name)
+        add_many('finishes', 'Finishes', 'fa-gem',
+                 TileFinish.objects.filter(name__icontains=q).order_by('name'),
+                 lambda f: f.name)
+        add_many('sizes', 'Sizes', 'fa-ruler-combined',
+                 TileSize.objects.filter(size_label__icontains=q).order_by('width_mm'),
+                 lambda s: s.size_label)
+        add_many('showrooms', 'Showrooms', 'fa-store',
+                 TileShowroom.objects.filter(
+                     Q(name__icontains=q) | Q(address__icontains=q) |
+                     Q(phone__icontains=q) | Q(village__name__icontains=q)
+                 ).order_by('name'),
+                 lambda s: f'{s.name} — {s.address}')
+        add_many('countries', 'Countries', 'fa-globe',
+                 Country.objects.filter(
+                     Q(name__icontains=q) | Q(continent__icontains=q)
+                 ).order_by('ranking'),
+                 lambda c: c.name)
+        add_many('states', 'States', 'fa-map-location-dot',
+                 State.objects.filter(
+                     Q(name__icontains=q) | Q(country__name__icontains=q)
+                 ).order_by('name'),
+                 lambda s: f'{s.name} ({s.country.name})' if s.country_id else s.name)
+        add_many('cities', 'Cities', 'fa-city',
+                 City.objects.filter(
+                     Q(name__icontains=q) | Q(state__name__icontains=q) |
+                     Q(state__country__name__icontains=q)
+                 ).order_by('name'),
+                 lambda c: f'{c.name}, {c.state.country.name}' if c.state_id else c.name)
+        add_many('villages', 'Villages', 'fa-map-pin',
+                 Village.objects.filter(
+                     Q(name__icontains=q) | Q(pincode__icontains=q) |
+                     Q(city__name__icontains=q)
+                 ).order_by('name'),
+                 lambda v: f'{v.name} {v.pincode or ""}'.strip())
+        add_many('users', 'Users', 'fa-users',
+                 User.objects.filter(
+                     Q(email__icontains=q) | Q(username__icontains=q) |
+                     Q(first_name__icontains=q) | Q(last_name__icontains=q)
+                 ).order_by('-date_joined'),
+                 lambda u: f'{u.email} ({u.username})')
+        if _table_exists('tiles_order'):
+            add_many('orders', 'Orders', 'fa-cart-shopping',
+                     Order.objects.filter(
+                         Q(order_id__icontains=q) | Q(customer_name__icontains=q) |
+                         Q(customer_email__icontains=q)
+                     ).order_by('-created_at'),
+                     lambda o: f'{o.order_id} — {o.customer_name or o.customer_email}')
+        if _table_exists('tiles_payment'):
+            add_many('payments', 'Payments', 'fa-credit-card',
+                     Payment.objects.filter(
+                         Q(razorpay_payment_id__icontains=q) |
+                         Q(order__order_id__icontains=q)
+                     ).order_by('-created_at'),
+                     lambda p: f'{p.razorpay_payment_id} — {p.status}')
+        return rows
+
+    rows = _rows()
+    ctx = _base_ctx('search', 'Search', 'fa-magnifying-glass',
+                    'Results across all admin sections', _paginate(request, rows))
+    ctx['results'] = rows
+    ctx['q'] = q
+    ctx['search_placeholder'] = 'everything'
+    ctx['hide_export'] = True
+    return render(request, 'tiles/sections/search.html', ctx)
 
 
 # ───────────────────────── Excel export ─────────────────────────
