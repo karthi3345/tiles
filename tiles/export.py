@@ -358,6 +358,24 @@ def _spec(section):
 # ── `?q=` search filters — mirror the section list views exactly ──
 
 _Q_FILTERS = {
+    'countries': lambda qs, q: qs.filter(
+        Q(name__icontains=q) | Q(continent__icontains=q)),
+    'states': lambda qs, q: qs.filter(
+        Q(name__icontains=q) | Q(country__name__icontains=q)),
+    'villages': lambda qs, q: qs.filter(
+        Q(name__icontains=q) | Q(pincode__icontains=q) | Q(city__name__icontains=q)),
+    'categories': lambda qs, q: qs.filter(name__icontains=q),
+    'effects': lambda qs, q: qs.filter(name__icontains=q),
+    'finishes': lambda qs, q: qs.filter(name__icontains=q),
+    'sizes': lambda qs, q: qs.filter(size_label__icontains=q),
+    'showrooms': lambda qs, q: qs.filter(
+        Q(name__icontains=q) | Q(address__icontains=q) |
+        Q(phone__icontains=q) | Q(village__name__icontains=q)),
+    'insights': lambda qs, q: qs.filter(
+        Q(title__icontains=q) | Q(content__icontains=q) |
+        Q(country__name__icontains=q)),
+    'chats': lambda qs, q: qs.filter(
+        Q(session_id__icontains=q) | Q(title__icontains=q)),
     'cities': lambda qs, q: qs.filter(
         Q(name__icontains=q) | Q(state__name__icontains=q) |
         Q(state__country__name__icontains=q)),

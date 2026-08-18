@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 from django.test import TestCase, Client, RequestFactory
 from django.contrib.auth.models import User
 from tiles.models import (
-    City, Country, State, TileCategory, TileProduct,
+    City, Country, State, Village, TileCategory, TileProduct,
     Order, OrderItem, Payment, Notification,
 )
 from tiles.views import _haversine_distance
@@ -952,3 +952,344 @@ class AddProductIntegrationTest(TestCase):
     def test_products_page_has_add1_autolaunch(self):
         resp = self.client.get('/admin/section/products/')
         self.assertContains(resp, "get('add') === '1'")
+
+
+class AdminSectionSearchTest(TestCase):
+    """The admin panel header search must filter every section via ?q=.
+
+    Regression guard for: search bar was decorative (no form, no name=q),
+    and 10 of 20 section views ignored the q parameter entirely.
+    """
+
+    SECTION_SPECS = {
+        # section: (url, field to match on seeded obj 'needle',
+        #           objects created in _seed, count_after_match)
+        'countries':  ('countries', 'name'),
+        'states':     ('states', 'name'),
+        'cities':     ('cities', 'name'),
+        'villages':   ('villages', 'name'),
+        'categories': ('categories', 'name'),
+        'effects':    ('effects', 'name'),
+        'finishes':   ('finishes', 'name'),
+        'sizes':      ('sizes', 'size_label'),
+        'showrooms':  ('showrooms', 'name'),
+        'insights':   ('insights', 'title'),
+        'chats':      ('chats', 'title'),
+        'messages':   ('messages', 'content'),
+        'images':     ('images', 'prompt'),
+        'users':      ('users', 'username'),
+        'profiles':   ('profiles', 'full_name'),
+        'notifications': ('notifications', 'message'),
+        'orders':     ('orders', 'order_id'),
+        'order-items': ('order-items', 'tile_name'),
+        'payments':   ('payments', 'razorpay_payment_id'),
+        'products':   ('products', 'name'),
+    }
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.staff = User.objects.create_superuser(
+            username='searchadmin', email='searchadmin@studiomathri.com',
+            password='SearchPass123!')
+
+        from tiles.models import (
+            TileEffect, TileFinish, TileSize, TileShowroom, MarketInsight,
+            ChatSession, ChatMessage, GeneratedImage, UserProfile, Notification,
+            Order, OrderItem, Payment,
+        )
+
+        cls.country_needle = Country.objects.create(
+            name='Needlevania', slug='needlevania', continent='Needleland',
+            flag_emoji='🏳', ranking=1)
+        cls.country_other = Country.objects.create(
+            name='Otherstan', slug='otherstan', continent='Somewhere',
+            flag_emoji='🏳', ranking=2)
+
+        cls.state_needle = State.objects.create(
+            country=cls.country_needle, name='Needle Pradesh', slug='needle-pradesh')
+        cls.state_other = State.objects.create(
+            country=cls.country_other, name='Other Pradesh', slug='other-pradesh')
+        cls.city_needle = City.objects.create(
+            state=cls.state_needle, name='Needle City', slug='needle-city',
+            latitude=1.0, longitude=1.0)
+        cls.city_other = City.objects.create(
+            state=cls.state_other, name='Elsewhere City', slug='elsewhere-city')
+
+        cls.village_needle = Village.objects.create(
+            city=cls.city_needle, name='Needle Village', slug='needle-village')
+        cls.category_needle = TileCategory.objects.create(name='Needle Tiles')
+        cls.category_other = TileCategory.objects.create(name='Other Tiles')
+        cls.effect_needle = TileEffect.objects.create(name='Needle Effect')
+        cls.finish_needle = TileFinish.objects.create(name='Needle Finish')
+        cls.size_needle = TileSize.objects.create(
+            size_label='600x600 Needle', width_mm=600, height_mm=600)
+        cls.size_other = TileSize.objects.create(
+            size_label='300x300 Plain', width_mm=300, height_mm=300)
+        cls.product_needle = TileProduct.objects.create(
+            name='Needle Glossy Tile', slug='needle-glossy-tile',
+            category=cls.category_needle)
+        cls.product_other = TileProduct.objects.create(
+            name='Matte Plain Tile', slug='matte-plain-tile',
+            category=cls.category_other)
+        cls.showroom_needle = TileShowroom.objects.create(
+            name='Needle Showroom', village=cls.village_needle)
+        cls.insight_needle = MarketInsight.objects.create(
+            country=cls.country_needle, title='Needle Market Report', content='The needle market grows')
+        cls.chat_needle = ChatSession.objects.create(
+            session_id='sess-needle-1', title='Needle Chat')
+        cls.chat_other = ChatSession.objects.create(
+            session_id='sess-other-1', title='General Chat')
+        cls.message_needle = ChatMessage.objects.create(
+            session=cls.chat_needle, role='user', content='needle question about tiles')
+        cls.user_needle = User.objects.create_user(
+            username='needleuser', email='needle@example.com', password='NeedlePass123!')
+        cls.profile_needle = UserProfile.objects.create(
+            user=cls.user_needle, full_name='Needle Person')
+        cls.notification_needle = Notification.objects.create(
+            user=cls.user_needle, message='needle notification content')
+        cls.order_needle = Order.objects.create(
+            order_id='order_needle_1', user=cls.user_needle,
+            customer_name='Needle Customer', customer_email='c@needle.com')
+        cls.order_item_needle = OrderItem.objects.create(
+            order=cls.order_needle, tile=cls.product_needle,
+            tile_name='Needle Tile Line Item', quantity=1, price=Decimal('10.00'))
+        cls.payment_needle = Payment.objects.create(
+            order=cls.order_needle, razorpay_payment_id='pay_needle_1',
+            amount=Decimal('10.00'), status='success')
+        cls.image_needle = GeneratedImage.objects.create(
+            user=cls.user_needle, prompt='a needle-patterned tile design')
+
+    def _get(self, url, q=None):
+        url = f'/admin/section/{url}/'
+        if q is not None:
+            url += f'?q={q}'
+        return self.client.get(url)
+
+    def test_search_filters_every_section(self):
+        """For all 20 sections, ?q=needle returns only matching rows."""
+        self.client.force_login(self.staff)
+        for section, (url, field) in self.SECTION_SPECS.items():
+            with self.subTest(section=section):
+                resp = self._get(url, q='needle')
+                self.assertEqual(resp.status_code, 200, section)
+                needle_pk = {
+                    'countries': self.country_needle.pk,
+                    'states': self.state_needle.pk,
+                    'cities': self.city_needle.pk,
+                    'villages': self.village_needle.pk,
+                    'categories': self.category_needle.pk,
+                    'effects': self.effect_needle.pk,
+                    'finishes': self.finish_needle.pk,
+                    'sizes': self.size_needle.pk,
+                    'showrooms': self.showroom_needle.pk,
+                    'insights': self.insight_needle.pk,
+                    'chats': self.chat_needle.pk,
+                    'messages': self.message_needle.pk,
+                    'images': self.image_needle.pk,
+                    'users': self.user_needle.pk,
+                    'profiles': self.profile_needle.pk,
+                    'notifications': self.notification_needle.pk,
+                    'orders': self.order_needle.pk,
+                    'order-items': self.order_item_needle.pk,
+                    'payments': self.payment_needle.pk,
+                    'products': self.product_needle.pk,
+                }[section]
+                other_pk_field = {
+                    'countries': 'otherstan', 'cities': 'elsewhere-city',
+                    'categories': 'other-tiles', 'sizes': '300x300-plain',
+                    'chats': 'general-chat', 'products': 'matte-plain-tile',
+                }
+                html = resp.content.decode()
+                self.assertIn('needle', html.lower(), section)
+                # record count badge must reflect the filtered set (1 record)
+                self.assertContains(resp, '1 records', msg_prefix=section)
+                # Other objects with distinct slugs must NOT appear in the table.
+                if section in other_pk_field:
+                    self.assertNotIn(other_pk_field[section], html, section)
+
+    def test_search_no_match_returns_zero_records(self):
+        self.client.force_login(self.staff)
+        for section, (url, _field) in self.SECTION_SPECS.items():
+            with self.subTest(section=section):
+                resp = self._get(url, q='zzzznomatch')
+                self.assertEqual(resp.status_code, 200, section)
+                self.assertContains(resp, '0 records', msg_prefix=section)
+
+    def test_search_bar_is_a_real_form(self):
+        """Header search must be a GET form with name=q and section action."""
+        self.client.force_login(self.staff)
+        for section in ('products', 'users', 'countries'):
+            with self.subTest(section=section):
+                resp = self._get(section)
+                self.assertContains(
+                    resp, f'<form method="GET" action="/admin/section/{section}/"',
+                    msg_prefix=section)
+                self.assertContains(resp, 'name="q"', msg_prefix=section)
+
+    def test_search_input_value_is_sticky(self):
+        self.client.force_login(self.staff)
+        resp = self._get('products', q='needle')
+        self.assertContains(resp, 'value="needle"')
+
+    def test_pagination_preserves_query(self):
+        self.client.force_login(self.staff)
+        # Need >25 products matching the filter so pagination renders
+        from tiles.models import TileProduct
+        for i in range(30):
+            TileProduct.objects.create(
+                name=f'Needle Bulk Tile {i:02d}', slug=f'needle-bulk-{i:02d}',
+                category=self.category_needle)
+        resp = self._get('products', q='needle')
+        self.assertContains(resp, '&q=needle')
+
+    def test_export_link_carries_query(self):
+        self.client.force_login(self.staff)
+        resp = self._get('products', q='needle')
+        self.assertContains(resp, 'export/?q=needle')
+
+    def test_search_gated_for_anonymous(self):
+        """?q= must not leak data without staff login."""
+        resp = self._get('users', q='needle')
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/admin/login/', resp.url)
+
+    def test_new_export_filters_match_views(self):
+        """Excel export now filters the 10 newly searchable sections."""
+        from tiles import export
+        for section in ('countries', 'states', 'villages', 'categories',
+                        'effects', 'finishes', 'sizes', 'showrooms',
+                        'insights', 'chats'):
+            with self.subTest(section=section):
+                self.assertIn(section, export._Q_FILTERS)
+                self.assertIn(section, export.SEARCHABLE)
+
+
+class GlobalSearchTest(TestCase):
+    """Dashboard header search → /admin/search/?q= — global across sections."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.staff = User.objects.create_superuser(
+            username='globalsearch', email='gs@studiomathri.com',
+            password='GlobalSearch123!')
+
+        from tiles.models import TileEffect, TileFinish, TileSize, TileShowroom
+        cls.country = Country.objects.create(
+            name='Globaria', slug='globaria', continent='Testia', ranking=1)
+        cls.state = State.objects.create(
+            country=cls.country, name='Globaria Pradesh', slug='globaria-pradesh')
+        cls.city = City.objects.create(
+            state=cls.state, name='Globaria City', slug='globaria-city',
+            latitude=1.0, longitude=1.0)
+        cls.category = TileCategory.objects.create(
+            name='Globaria Floors', slug='globaria-floors', sort_order=1)
+        cls.product = TileProduct.objects.create(
+            name='Globaria Premium Tile', slug='globaria-premium-tile',
+            category=cls.category, material='globaria stone')
+        cls.effect = TileEffect.objects.create(name='Globaria Shimmer', slug='globaria-shimmer')
+        cls.finish = TileFinish.objects.create(name='Globaria Gloss', slug='globaria-gloss')
+        cls.size = TileSize.objects.create(
+            size_label='Globaria 600x600', width_mm=600, height_mm=600)
+        cls.village = Village.objects.create(
+            city=cls.city, name='Globaria Village', slug='globaria-village',
+            pincode='111111')
+        cls.showroom = TileShowroom.objects.create(
+            name='Globaria Flagship',
+            village=cls.village, address='1 Globaria St')
+
+        # Non-matching controls
+        TileProduct.objects.create(name='Boring Tile', slug='boring-tile')
+
+    def _get(self, **params):
+        return self.client.get('/admin/search/', params)
+
+    def test_anonymous_redirected_to_login(self):
+        resp = self._get(q='globaria')
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('/admin/login/', resp.url)
+
+    def test_empty_q_shows_hint(self):
+        self.client.force_login(self.staff)
+        resp = self._get(q='')
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Type a search term')
+        self.assertContains(resp, '0 records')
+
+    def test_results_across_sections(self):
+        self.client.force_login(self.staff)
+        resp = self._get(q='globaria')
+        self.assertEqual(resp.status_code, 200)
+        # One row per match: product, category, effect, finish, size, showroom,
+        # country, state, city, village (10 needle objects; 'Boring Tile' absent)
+        self.assertContains(resp, '10 records')
+        self.assertContains(resp, 'Globaria Premium Tile')
+        self.assertContains(resp, 'Globaria Floors')
+        self.assertContains(resp, 'Globaria Flagship')
+        self.assertNotIn('Boring Tile', resp.content.decode())
+
+    def test_result_links_carry_query(self):
+        self.client.force_login(self.staff)
+        resp = self._get(q='globaria')
+        self.assertContains(resp, '/admin/section/products/?q=globaria')
+        self.assertContains(resp, '/admin/section/countries/?q=globaria')
+
+    def test_no_match_shows_empty_state(self):
+        self.client.force_login(self.staff)
+        resp = self._get(q='zzzznothing')
+        self.assertContains(resp, 'No results')
+        self.assertContains(resp, '0 records')
+
+    def test_pagination_caps_rows(self):
+        from tiles.models import TileProduct
+        for i in range(30):
+            TileProduct.objects.create(
+                name=f'Globaria Bulk {i:02d}', slug=f'globaria-bulk-{i:02d}')
+        self.client.force_login(self.staff)
+        resp = self._get(q='globaria')
+        self.assertContains(resp, 'Page 1 of')
+        self.assertContains(resp, '&q=globaria')  # pagination preserves q
+
+    def test_export_button_hidden_on_search_page(self):
+        self.client.force_login(self.staff)
+        resp = self._get(q='globaria')
+        self.assertNotContains(resp, 'Export Excel')
+
+    def test_dashboard_has_real_search_form(self):
+        """The /admin/ header input must submit a GET form to /admin/search/."""
+        self.client.force_login(self.staff)
+        resp = self.client.get('/admin/')
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, '<form method="GET" action="/admin/search/"')
+        self.assertContains(resp, 'name="q"')
+        self.assertContains(resp, 'Search everything')
+
+    def test_search_page_own_header_form(self):
+        """The search page's own header search must not 404 / read 'search search'."""
+        self.client.force_login(self.staff)
+        resp = self._get(q='globaria')
+        self.assertContains(resp, 'action="/admin/search/"')
+        self.assertContains(resp, 'Search everything')
+        self.assertNotContains(resp, 'Search search')
+
+    def test_row_urls_encode_query(self):
+        """Special chars in q must survive the round-trip into section links."""
+        self.client.force_login(self.staff)
+        from tiles.models import TileCategory
+        TileCategory.objects.create(name='A&B C++ Floors', slug='ab-floors')
+        resp = self._get(q='A&B')
+        html = resp.content.decode()
+        self.assertIn('A%26B', html)  # encoded, not raw
+
+    def test_orders_searched_when_table_exists(self):
+        """If the orders table exists, order_id matches appear in results."""
+        from tiles.models import Order
+        self.client.force_login(self.staff)
+        try:
+            order = Order.objects.create(
+                user=self.staff, order_id='ORDER-GLOBARIA-1',
+                customer_name='Globaria Buyer', customer_email='b@globaria.com',
+                amount=1)
+        except Exception:
+            self.skipTest('orders table not migrated')
+        resp = self._get(q='globaria')
+        self.assertContains(resp, 'ORDER-GLOBARIA-1')

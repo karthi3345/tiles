@@ -184,12 +184,15 @@
         <i class="fa-solid fa-bars text-graydark-500 dark:text-graydark-300 text-lg"></i>
       </button>
 
-      <!-- Search -->
-      <div class="flex-1 max-w-md relative">
-        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-graydark-400 text-sm"></i>
-        <input type="text" placeholder="Search..."
+      <!-- Search (global — submits to /admin/search/) -->
+      <form method="GET" action="/admin/search/" class="flex-1 max-w-md relative group">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-graydark-400 text-sm group-focus-within:text-brand-500 transition-colors"></i>
+        <input type="text" name="q" id="section-search-input"
+               value="{{ request.GET.q|default:'' }}"
+               placeholder="Search everything…"
+               autocomplete="off"
                class="w-full pl-10 pr-4 py-2.5 bg-graydark-50 dark:bg-graydark-800 border border-transparent focus:border-brand-300 rounded-xl text-sm outline-none placeholder:text-graydark-400 text-graydark-700 dark:text-graydark-200">
-      </div>
+      </form>
 
       <!-- Right-aligned controls -->
       <div class="ml-auto flex items-center gap-2">
@@ -766,6 +769,18 @@
 
   // ── Theme toggle ──
   var themeBtn = document.getElementById('themeToggle');
+
+  // Escape in the search box clears it
+  var searchInput = document.getElementById('section-search-input');
+  if (searchInput) {
+    searchInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && searchInput.value) {
+        e.preventDefault();
+        searchInput.value = '';
+        searchInput.focus();
+      }
+    });
+  }
   var savedTheme = localStorage.getItem('sm-theme') || 'dark';
   if (savedTheme === 'light') {
     document.documentElement.classList.remove('dark');
