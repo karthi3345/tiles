@@ -2,7 +2,7 @@
 
 <nav class="fixed top-0 left-0 right-0 z-[9999] h-20 bg-white/80 backdrop-blur-xl border-b border-slate-200/60">
 
-<div class="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+<div class="max-w-7xl mx-auto h-full px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-6">
 
 <!-- LOGO -->
 <a href="{% url 'tiles:home' %}" class="flex items-center gap-3 flex-shrink-0">
@@ -23,17 +23,9 @@
     <a href="{% url 'tiles:tile_catalog' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">Tiles</a>
 
     {% if user.is_authenticated %}
-    <a href="{% url 'tiles:chat' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">
-        AI Chat
-        <span class="inline-block w-2 h-2 bg-green-500 rounded-full ml-0.5"></span>
-    </a>
     <a href="{% url 'tiles:generate_image' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">Generate</a>
     <a href="{% url 'tiles:convert_image' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">Convert</a>
     {% else %}
-    <a href="{% url 'accounts:login' %}?next={% url 'tiles:chat' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">
-        AI Chat
-        <span class="inline-block w-2 h-2 bg-green-500 rounded-full ml-0.5"></span>
-    </a>
     <a href="{% url 'accounts:login' %}?next={% url 'tiles:generate_image' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">Generate</a>
     <a href="{% url 'accounts:login' %}?next={% url 'tiles:convert_image' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">Convert</a>
     {% endif %}
@@ -41,7 +33,7 @@
 
 
 <!-- SEARCH BAR (CENTER) -->
-<div class="hidden md:flex flex-1 max-w-sm lg:max-w-md xl:max-w-lg">
+<div class="hidden md:flex flex-1 max-w-sm mx-auto">
     <form method="GET" action="{% url 'tiles:tile_catalog' %}" class="w-full flex items-center">
         <div class="relative w-full group">
             <iconify-icon icon="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-brand-600 transition-colors"></iconify-icon>
@@ -60,12 +52,12 @@
 
 
 <!-- DESKTOP RIGHT SIDE -->
-<div class="hidden sm:flex items-center gap-2 flex-shrink-0">
+<div class="hidden sm:flex items-center gap-1.5 flex-shrink-0">
 
     {% if user.is_authenticated %}
 
     <!-- CART ICON -->
-    <a href="{% url 'tiles:cart_detail' %}" class="relative w-11 h-11 rounded-xl border border-slate-200 flex items-center justify-center hover:bg-slate-100 hover:border-slate-300 transition-all">
+    <a href="{% url 'tiles:cart_detail' %}" class="relative w-10 h-10 rounded-xl border border-slate-200 flex items-center justify-center hover:bg-slate-100 hover:border-slate-300 transition-all">
         <iconify-icon icon="lucide:shopping-cart" class="text-lg text-slate-600"></iconify-icon>
         {% if cart_item_count|default:0 > 0 %}
         <span class="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 bg-brand-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
@@ -78,7 +70,7 @@
     <div class="relative" id="notif-wrapper">
         <button
             id="notif-btn"
-            class="relative w-11 h-11 rounded-xl border border-slate-200 flex items-center justify-center hover:bg-slate-100 hover:border-slate-300 transition-all"
+            class="relative w-10 h-10 rounded-xl border border-slate-200 flex items-center justify-center hover:bg-slate-100 hover:border-slate-300 transition-all"
         >
             <iconify-icon icon="lucide:bell" class="text-lg text-slate-600"></iconify-icon>
             <!-- UNREAD BADGE -->
@@ -104,7 +96,7 @@
                 </div>
                 <div class="flex items-center gap-2">
                     {% if unread_count|default:0 > 0 %}
-                    <form method="POST" action="{% url 'tiles:mark_all_notifications_read' %}" class="inline">
+                    <form id="mark-all-read-form" method="POST" action="{% url 'tiles:mark_all_notifications_read' %}" class="inline">
                         {% csrf_token %}
                         <button type="submit"
                                 class="text-xs text-brand-600 hover:text-brand-700 font-semibold hover:underline">
@@ -186,7 +178,7 @@
 
 <!-- PROFILE -->
 <a href="{% url 'accounts:profile' %}"
-   class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-100 transition-colors">
+   class="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-slate-100 transition-colors">
 
 
     {% if user_profile and user_profile.profile_picture %}
@@ -221,10 +213,9 @@
 
 </a>
 
-
-    <!-- LOGOUT -->
+    <!-- LOGOUT (far right end) -->
     <a href="{% url 'accounts:logout' %}"
-       class="h-11 px-5 border border-slate-300 rounded-xl flex items-center gap-2 text-sm font-semibold hover:bg-slate-50 transition-colors">
+       class="h-10 px-4 border border-slate-300 rounded-xl flex items-center gap-2 text-sm font-semibold hover:bg-slate-50 transition-colors">
         <iconify-icon icon="lucide:log-out"></iconify-icon>
         <span class="hidden lg:inline">Logout</span>
     </a>
@@ -312,10 +303,6 @@
             {% endif %}
         </a>
 
-        <a href="{% url 'tiles:chat' %}" class="flex items-center gap-2 px-4 py-3 rounded-lg hover:bg-slate-100 text-sm text-slate-700 font-medium transition-colors">
-            AI Chat
-            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-        </a>
         <a href="{% url 'tiles:generate_image' %}" class="block px-4 py-3 rounded-lg hover:bg-slate-100 text-sm text-slate-700 font-medium transition-colors">Generate</a>
         <a href="{% url 'accounts:profile' %}" class="block px-4 py-3 rounded-lg hover:bg-slate-100 text-sm text-slate-700 font-medium transition-colors">Profile</a>
 
@@ -328,10 +315,6 @@
 
         {% else %}
 
-        <a href="{% url 'accounts:login' %}?next={% url 'tiles:chat' %}" class="flex items-center gap-2 px-4 py-3 rounded-lg hover:bg-slate-100 text-sm text-slate-700 font-medium transition-colors">
-            AI Chat
-            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-        </a>
         <a href="{% url 'accounts:login' %}?next={% url 'tiles:generate_image' %}" class="block px-4 py-3 rounded-lg hover:bg-slate-100 text-sm text-slate-700 font-medium transition-colors">Generate</a>
 
         <div class="pt-2 mt-2 border-t border-slate-100 space-y-2">
@@ -402,6 +385,44 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
+
+    // ── MARK ALL READ — no page navigation, updates in place ──
+    const markAllForm = document.getElementById("mark-all-read-form");
+    if (markAllForm) {
+        markAllForm.addEventListener("submit", function(e) {
+            e.preventDefault();
+            const btn = markAllForm.querySelector("button");
+            btn.disabled = true;
+            fetch(markAllForm.action, {
+                method: "POST",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": markAllForm.querySelector(
+                        "[name=csrfmiddlewaretoken]").value
+                }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.ok) {
+                    // Update badge + list immediately (next poll keeps it fresh)
+                    updateNotifBadge(0);
+                    rebuildNotifListRefresh();
+                    // Remove unread styling from currently-rendered items
+                    document.querySelectorAll("#notif-list a").forEach(function(a) {
+                        a.classList.remove("bg-brand-50/40", "border-l-[3px]", "border-brand-500");
+                        a.querySelectorAll("span.w-2\\.5").forEach(function(d) { d.remove(); });
+                    });
+                    markAllForm.remove();
+                }
+            })
+            .catch(function() { markAllForm.submit(); });  // fallback: normal POST
+        });
+    }
+
+    function rebuildNotifListRefresh() {
+        // Trigger an immediate poll so the list reflects read state
+        pollNotifications();
+    }
 
     // CLOSE MOBILE MENU ON LINK CLICK
     if (mobileMenu) {

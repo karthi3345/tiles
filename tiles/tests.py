@@ -1861,3 +1861,100 @@ class EmailLoginTest(TestCase):
             'email': 'nobody@test.com', 'password': 'TestPass123!'})
         self.assertEqual(resp.status_code, 200)
         self.assertNotIn('_auth_user_id', self.client.session)
+
+
+class NavbarChatbotWidgetTest(TestCase):
+    """AI Chat link removed from navbar; chat lives in a floating widget
+    included on every page for authenticated users."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='widgetuser', email='widgetuser@test.com',
+            password='TestPass123!', first_name='Widget',
+        )
+        # Home page requires a few seed rows to render location cards
+        self.country = Country.objects.create(name='India', slug='india-widget')
+
+    def test_navbar_has_no_ai_chat_link(self):
+        self.client.force_login(self.user)
+        html = self.client.get('/').content.decode()
+        self.assertNotIn('>AI Chat</a>', html)
+        self.assertNotIn(">AI Chat\n", html)
+
+    def test_widget_present_when_authenticated(self):
+        self.client.force_login(self.user)
+        html = self.client.get('/').content.decode()
+        self.assertIn('id="chatbot-launcher"', html)
+        self.assertIn('id="chatbot-panel"', html)
+        self.assertIn('chatbot-form', html)
+
+    def test_widget_absent_when_anonymous(self):
+        html = self.client.get('/').content.decode()
+        self.assertNotIn('id="chatbot-launcher"', html)
+
+    def test_widget_on_multiple_pages(self):
+        self.client.force_login(self.user)
+        for url in ('/tiles/', '/generate-image/', '/convert/'):
+            resp = self.client.get(url)
+            self.assertEqual(resp.status_code, 200, url)
+            self.assertIn('id="chatbot-launcher"'.encode(), resp.content, url)
+
+    def test_logout_is_last_anchor_in_right_cluster(self):
+        self.client.force_login(self.user)
+        html = self.client.get('/').content.decode()
+        desktop = html.split('DESKTOP RIGHT SIDE')[1].split('MOBILE BUTTON')[0]
+        logout_pos = desktop.rfind('Logout')
+        profile_pos = desktop.rfind('accounts/profile')
+        self.assertGreater(logout_pos, profile_pos)
+
+    def test_navbar_notification_ids_preserved(self):
+        self.client.force_login(self.user)
+        html = self.client.get('/').content.decode()
+        for elem_id in ('notif-btn', 'notif-dropdown', 'notif-list',
+                        'notif-wrapper', 'mobile-btn', 'mobile-menu'):
+            self.assertIn(f'id="{elem_id}"', html)
+
+
+class MarkAllReadAjaxTest(TestCase):
+    """Mark-all-read via AJAX must return JSON with no redirect —
+    the browser stays exactly on the current section."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='ajaxmark@test.com', password='TestPass123!',
+            email='ajaxmark@test.com',
+        )
+        for i in range(2):
+            Notification.objects.create(
+                user=self.user, notif_type='general',
+                message=f'unread {i}', is_read=False,
+            )
+
+    def test_ajax_post_returns_json_no_redirect(self):
+        self.client.login(username='ajaxmark@test.com', password='TestPass123!')
+        resp = self.client.post(
+            '/notifications/mark-all-read/',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'application/json')
+        data = json.loads(resp.content)
+        self.assertTrue(data['ok'])
+        self.assertEqual(data['unread_count'], 0)
+        self.assertEqual(
+            Notification.objects.filter(user=self.user, is_read=False).count(), 0)
+
+    def test_normal_post_still_redirects(self):
+        self.client.login(username='ajaxmark@test.com', password='TestPass123!')
+        resp = self.client.post('/notifications/mark-all-read/')
+        self.assertEqual(resp.status_code, 302)
+
+    def test_anonymous_ajax_post_returns_json(self):
+        resp = self.client.post(
+            '/notifications/mark-all-read/',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        # require_POST + anonymous: view runs, is_authenticated False → JSON ok
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content)
+        self.assertTrue(data['ok'])

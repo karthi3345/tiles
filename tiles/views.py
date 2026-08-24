@@ -806,6 +806,9 @@ def mark_all_notifications_read(request):
         Notification.objects.filter(
             user=request.user, is_read=False
         ).update(is_read=True)
+    # AJAX requests stay exactly on the current page — no redirect needed
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'ok': True, 'unread_count': 0})
     return redirect(request.META.get('HTTP_REFERER', '/'))
 
 

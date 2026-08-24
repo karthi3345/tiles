@@ -1,0 +1,203 @@
+{% if user.is_authenticated %}
+<!-- ────────────────────────────────────────────────
+     Floating AI Chatbot Widget (every page)
+     ──────────────────────────────────────────────── -->
+<div id="chatbot-root">
+
+    <!-- LAUNCHER -->
+    <button id="chatbot-launcher"
+            aria-label="Open AI chat"
+            class="fixed bottom-6 right-6 z-[90] w-14 h-14 rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-2xl flex items-center justify-center transition-all hover:scale-105">
+        <iconify-icon icon="lucide:bot" class="text-2xl"></iconify-icon>
+        <span class="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-400 rounded-full border-2 border-white"></span>
+    </button>
+
+    <!-- PANEL -->
+    <div id="chatbot-panel"
+         class="hidden fixed bottom-24 right-6 z-[90] w-[92vw] sm:w-[400px] h-[540px] max-h-[75vh] bg-white rounded-2xl shadow-2xl border border-slate-200/80 flex flex-col overflow-hidden">
+
+        <!-- HEADER -->
+        <div class="flex items-center justify-between px-4 py-3 bg-brand-600 text-white">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center">
+                    <iconify-icon icon="lucide:bot" class="text-lg"></iconify-icon>
+                </div>
+                <div>
+                    <p class="text-sm font-bold leading-tight">Studio Mathri AI</p>
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 bg-emerald-300 rounded-full animate-pulse"></span>
+                        <span class="text-[10px] text-blue-100">Online — tiles, markets, locations</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-1">
+                <button id="chatbot-clear" title="New chat"
+                        class="w-8 h-8 rounded-lg hover:bg-white/15 flex items-center justify-center transition-colors">
+                    <iconify-icon icon="lucide:plus" class="text-base"></iconify-icon>
+                </button>
+                <button id="chatbot-close" title="Close"
+                        class="w-8 h-8 rounded-lg hover:bg-white/15 flex items-center justify-center transition-colors">
+                    <iconify-icon icon="lucide:x" class="text-base"></iconify-icon>
+                </button>
+            </div>
+        </div>
+
+        <!-- MESSAGES -->
+        <div id="chatbot-messages" class="flex-1 overflow-y-auto px-4 py-4 bg-slate-50/60">
+            <div id="chatbot-welcome" class="text-center py-6">
+                <div class="w-14 h-14 rounded-2xl bg-brand-600/10 flex items-center justify-center mx-auto mb-3">
+                    <iconify-icon icon="lucide:layout-grid" class="text-2xl text-brand-600"></iconify-icon>
+                </div>
+                <p class="text-sm font-semibold text-slate-700">Hi! I'm Studio Mathri AI 👋</p>
+                <p class="text-xs text-slate-400 mt-1 max-w-[260px] mx-auto">Ask me about tiles, markets, or locations in any country, state, city, or village.</p>
+                <div class="grid grid-cols-1 gap-2 mt-4 text-left">
+                    <button class="chatbot-suggestion text-xs px-3 py-2.5 rounded-xl border border-slate-200 bg-white hover:border-brand-300 hover:bg-blue-50/50 transition-all" data-prompt="What are the top 5 tile producing countries?">📊 Top 5 producing countries?</button>
+                    <button class="chatbot-suggestion text-xs px-3 py-2.5 rounded-xl border border-slate-200 bg-white hover:border-brand-300 hover:bg-blue-50/50 transition-all" data-prompt="Best bathroom tiles in India with product recommendations">🛁 Best bathroom tiles in India</button>
+                    <button class="chatbot-suggestion text-xs px-3 py-2.5 rounded-xl border border-slate-200 bg-white hover:border-brand-300 hover:bg-blue-50/50 transition-all" data-prompt="Difference between porcelain, ceramic and vitrified tiles">🧱 Porcelain vs Ceramic vs Vitrified</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- INPUT -->
+        <div class="p-3 bg-white border-t border-slate-200">
+            <form id="chatbot-form" class="flex items-end gap-2">
+                <textarea id="chatbot-input" rows="1" placeholder="Ask about tiles..."
+                          class="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:bg-white resize-none transition-all"
+                          style="max-height:100px"></textarea>
+                <button type="submit" id="chatbot-send"
+                        class="flex-shrink-0 w-10 h-10 rounded-xl bg-brand-600 hover:bg-brand-700 text-white flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled>
+                    <iconify-icon icon="lucide:send" class="text-base"></iconify-icon>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <input type="hidden" id="chatbot-session" value="">
+</div>
+
+<script>
+(function () {
+    const launcher = document.getElementById('chatbot-launcher');
+    const panel = document.getElementById('chatbot-panel');
+    const closeBtn = document.getElementById('chatbot-close');
+    const clearBtn = document.getElementById('chatbot-clear');
+    const form = document.getElementById('chatbot-form');
+    const input = document.getElementById('chatbot-input');
+    const sendBtn = document.getElementById('chatbot-send');
+    const msgsArea = document.getElementById('chatbot-messages');
+    const sessionEl = document.getElementById('chatbot-session');
+    let busy = false;
+
+    function toggle(open) {
+        panel.classList.toggle('hidden', open === undefined ? undefined : !open);
+        if (!panel.classList.contains('hidden')) {
+            // swap launcher icon to chat bubble
+            launcher.querySelector('iconify-icon').setAttribute('icon', 'lucide:message-circle');
+            input.focus();
+        } else {
+            launcher.querySelector('iconify-icon').setAttribute('icon', 'lucide:bot');
+        }
+    }
+
+    launcher.addEventListener('click', () => toggle(panel.classList.contains('hidden')));
+    closeBtn.addEventListener('click', () => toggle(false));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') toggle(false); });
+
+    clearBtn.addEventListener('click', () => {
+        sessionEl.value = '';
+        msgsArea.innerHTML = document.getElementById('chatbot-welcome').outerHTML;
+    });
+
+    document.addEventListener('click', e => {
+        const btn = e.target.closest('.chatbot-suggestion');
+        if (btn && !panel.classList.contains('hidden')) {
+            input.value = btn.dataset.prompt;
+            input.dispatchEvent(new Event('input'));
+            form.dispatchEvent(new Event('submit'));
+        }
+    });
+
+    input.addEventListener('input', function () {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+        sendBtn.disabled = !this.value.trim();
+    });
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (input.value.trim() && !busy) form.dispatchEvent(new Event('submit'));
+        }
+    });
+
+    const WELCOME_HTML = document.getElementById('chatbot-welcome') ? document.getElementById('chatbot-welcome').outerHTML : '';
+
+    function escHtml(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+    function fmtMd(t) {
+        let h = escHtml(t);
+        h = h.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        h = h.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        h = h.replace(/^[-•]\s+(.+)$/gm, '<li>$1</li>');
+        h = h.replace(/(<li>[\s\S]*<\/li>)/, '<ul class="list-disc pl-4 my-1">$1</ul>');
+        h = h.replace(/\n/g, '<br>');
+        return h;
+    }
+    function rmWelcome() { const w = document.getElementById('chatbot-welcome'); if (w) w.remove(); }
+    function scrollBottom() { msgsArea.scrollTop = msgsArea.scrollHeight; }
+
+    function addMsg(role, content) {
+        rmWelcome();
+        const d = document.createElement('div');
+        d.className = 'mb-3';
+        if (role === 'user') {
+            d.innerHTML = '<div class="flex justify-end"><div class="max-w-[85%] bg-brand-600 text-white rounded-2xl rounded-br-md px-3.5 py-2.5"><p class="text-sm leading-relaxed">' + escHtml(content) + '</p></div></div>';
+        } else {
+            d.innerHTML = '<div class="flex gap-2"><div class="w-7 h-7 rounded-lg bg-brand-600/10 flex items-center justify-center flex-shrink-0 mt-0.5"><iconify-icon icon="lucide:bot" class="text-xs text-brand-600"></iconify-icon></div><div class="max-w-[85%] bg-white border border-slate-200 rounded-2xl rounded-bl-md px-3.5 py-2.5 shadow-sm"><div class="text-sm leading-relaxed text-slate-800">' + fmtMd(content) + '</div></div></div>';
+        }
+        msgsArea.appendChild(d);
+        scrollBottom();
+    }
+
+    function addTyping() {
+        rmWelcome();
+        const d = document.createElement('div');
+        d.id = 'chatbot-typing';
+        d.className = 'mb-3';
+        d.innerHTML = '<div class="flex gap-2"><div class="w-7 h-7 rounded-lg bg-brand-600/10 flex items-center justify-center flex-shrink-0 mt-0.5"><iconify-icon icon="lucide:bot" class="text-xs text-brand-600"></iconify-icon></div><div class="bg-white border border-slate-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm"><div class="flex gap-1.5"><span class="w-2 h-2 bg-slate-300 rounded-full animate-bounce" style="animation-delay:0s"></span><span class="w-2 h-2 bg-slate-300 rounded-full animate-bounce" style="animation-delay:.15s"></span><span class="w-2 h-2 bg-slate-300 rounded-full animate-bounce" style="animation-delay:.3s"></span></div></div></div>';
+        msgsArea.appendChild(d);
+        scrollBottom();
+    }
+    function rmTyping() { const t = document.getElementById('chatbot-typing'); if (t) t.remove(); }
+
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const msg = input.value.trim();
+        if (!msg || busy) return;
+        busy = true; sendBtn.disabled = true;
+        addMsg('user', msg);
+        input.value = ''; input.style.height = 'auto';
+        addTyping();
+        try {
+            const r = await fetch('{% url "tiles:chat" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ message: msg, session_id: sessionEl.value })
+            });
+            const data = await r.json();
+            rmTyping();
+            if (data.success) {
+                addMsg('assistant', data.response);
+                if (data.session_id) sessionEl.value = data.session_id;
+            } else {
+                addMsg('assistant', '⚠️ ' + (data.error || 'Error'));
+            }
+        } catch (err) {
+            rmTyping();
+            addMsg('assistant', '⚠️ Connection error. Please try again.');
+        }
+        busy = false; sendBtn.disabled = !input.value.trim();
+        input.focus();
+    });
+})();
+</script>
+{% endif %}
