@@ -599,8 +599,72 @@ import requests
 from PIL import Image
 
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.contrib.auth.decorators import login_required
+
+from .services import image_convert
+
+
+@login_required
+def convert_image_view(request):
+    """
+    Standalone image format converter: upload a PNG/JPEG (≤10 MB) and
+    download it converted to TIFF / BMP / PSD / PDF, optionally with the
+    color channels extracted as separate layers.
+    """
+    context = {
+        "formats": image_convert.FORMAT_CHOICES,
+        "max_upload_mb": image_convert.MAX_UPLOAD_BYTES // (1024 * 1024),
+    }
+
+    if request.method != "POST":
+        return render(request, "tiles/convert.html", context)
+
+    uploaded = request.FILES.get("image")
+    if uploaded is None:
+        context["error"] = "Please choose an image file to convert."
+        return render(request, "tiles/convert.html", context, status=400)
+
+    if uploaded.size > image_convert.MAX_UPLOAD_BYTES:
+        context["error"] = (
+            f"Image is too large. Maximum upload size is {context['max_upload_mb']} MB."
+        )
+        return render(request, "tiles/convert.html", context, status=400)
+
+    target_format = (request.POST.get("format") or "").strip().lower()
+    if target_format not in image_convert.FORMAT_CHOICES:
+        context["error"] = "Please pick one of TIFF, BMP, PSD or PDF."
+        return render(request, "tiles/convert.html", context, status=400)
+
+    layers = request.POST.get("layers") in ("1", "true", "on")
+
+    try:
+        output = image_convert.convert_image(
+            BytesIO(uploaded.read()),
+            target_format,
+            layers=layers,
+            width=request.POST.get("width") or None,
+            height=request.POST.get("height") or None,
+            dpi=request.POST.get("dpi") or None,
+        )
+    except image_convert.ImageConversionError as exc:
+        context["error"] = str(exc)
+        return render(request, "tiles/convert.html", context)
+
+    meta = image_convert.FORMAT_META[target_format]
+    filename = f'converted-{int(time.time())}.{meta["extension"]}'
+    response = HttpResponse(
+        output.getvalue(), content_type=meta["content_type"]
+    )
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+    Notification.objects.create(
+        user=request.user,
+        notif_type="download_complete",
+        message=f'Image converted to {target_format.upper()} ("{filename}").',
+        related_url="/convert/",
+    )
+    return response
 
 
 @login_required
@@ -623,6 +687,39 @@ def download_generated_image(request, pk):
     fmt = request.GET.get("format", "png").lower()
     quality = int(request.GET.get("quality", 100))
     filename = request.GET.get("filename", f"tile-{pk}")
+    layers_requested = request.GET.get("layers") in ("1", "true", "on")
+
+    # New layered formats (TIFF / BMP / PSD / PDF) go through the
+    # image_convert service so channel layers can be extracted.
+    if fmt in image_convert.FORMAT_CHOICES:
+        try:
+            output = image_convert.convert_image(
+                BytesIO(response.content),
+                fmt,
+                layers=layers_requested,
+                width=width,
+                height=height,
+                dpi=dpi,
+            )
+        except image_convert.ImageConversionError as exc:
+            return HttpResponse(str(exc), status=400)
+
+        meta = image_convert.FORMAT_META[fmt]
+        download = HttpResponse(
+            output.getvalue(), content_type=meta["content_type"]
+        )
+        download["Content-Disposition"] = (
+            f'attachment; filename="{filename}.{meta["extension"]}"'
+        )
+        Notification.objects.create(
+            user=request.user,
+            notif_type="download_complete",
+            message=f"Image \"{filename}.{meta['extension']}\" downloaded "
+                    f"({width}×{height}, {dpi} DPI"
+                    + (", layers" if layers_requested else "") + ").",
+            related_url="/generate-image/",
+        )
+        return download
 
     # Open image
     img = Image.open(BytesIO(response.content)).convert("RGB")

@@ -1,0 +1,225 @@
+{% extends 'tiles/base.html' %}
+{% block title %}Convert Image{% endblock %}
+
+{% block content %}
+<div class="pt-28 pb-16">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6">
+
+        <div class="text-center mb-10">
+            <div class="w-16 h-16 rounded-2xl bg-brand-600/10 flex items-center justify-center mx-auto mb-4">
+                <iconify-icon icon="lucide:layers" class="text-3xl text-brand-600"></iconify-icon>
+            </div>
+            <h1 class="text-3xl font-bold text-slate-900 mb-2">Image Format Converter</h1>
+            <p class="text-slate-500 max-w-xl mx-auto">
+                Convert a PNG or JPEG into <strong>TIFF</strong>, <strong>BMP</strong>,
+                <strong>PSD</strong> or <strong>PDF</strong> — optionally with the color
+                channels extracted as separate layers.
+            </p>
+        </div>
+
+        {% if error %}
+        <div class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-start gap-2">
+            <iconify-icon icon="lucide:alert-circle" class="text-lg mt-0.5 flex-shrink-0"></iconify-icon>
+            <span>{{ error }}</span>
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" id="convert-form"
+              class="bg-white border border-slate-200 rounded-2xl shadow-sm divide-y divide-slate-100">
+            {% csrf_token %}
+
+            <!-- Upload -->
+            <div class="p-6">
+                <label class="block text-sm font-semibold text-slate-900 mb-2">1 · Choose an image</label>
+                <label id="dropzone" for="image-input"
+                       class="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-xl py-10 px-4 cursor-pointer hover:border-brand-400 hover:bg-blue-50/40 transition-colors">
+                    <iconify-icon icon="lucide:upload-cloud" class="text-3xl text-slate-400 mb-2"></iconify-icon>
+                    <span class="text-sm text-slate-600" id="dropzone-text">
+                        Drop a PNG or JPEG here, or <span class="text-brand-600 font-medium">browse</span>
+                    </span>
+                    <span class="text-xs text-slate-400 mt-1">Max {{ max_upload_mb }} MB · PNG, JPEG or WebP</span>
+                    <input type="file" id="image-input" name="image" accept=".png,.jpg,.jpeg,.webp"
+                           class="hidden" />
+                </label>
+                <p id="file-info" class="hidden mt-2 text-xs text-slate-500 flex items-center gap-1.5"></p>
+                <p id="file-error" class="hidden mt-2 text-xs text-red-600"></p>
+            </div>
+
+            <!-- Format -->
+            <div class="p-6">
+                <label class="block text-sm font-semibold text-slate-900 mb-3">2 · Target format</label>
+                <div class="grid sm:grid-cols-2 gap-3">
+                    <label class="fmt-option flex items-start gap-3 border border-slate-200 rounded-xl px-4 py-3 cursor-pointer hover:border-brand-400 transition-colors">
+                        <input type="radio" name="format" value="tiff" class="mt-1" checked />
+                        <span>
+                            <span class="block text-sm font-medium text-slate-800">TIFF</span>
+                            <span class="block text-xs text-slate-500">Multi-page: original + one page per color layer</span>
+                        </span>
+                    </label>
+                    <label class="fmt-option flex items-start gap-3 border border-slate-200 rounded-xl px-4 py-3 cursor-pointer hover:border-brand-400 transition-colors">
+                        <input type="radio" name="format" value="psd" class="mt-1" />
+                        <span>
+                            <span class="block text-sm font-medium text-slate-800">PSD</span>
+                            <span class="block text-xs text-slate-500">Real Photoshop layers — each channel is a named layer</span>
+                        </span>
+                    </label>
+                    <label class="fmt-option flex items-start gap-3 border border-slate-200 rounded-xl px-4 py-3 cursor-pointer hover:border-brand-400 transition-colors">
+                        <input type="radio" name="format" value="pdf" class="mt-1" />
+                        <span>
+                            <span class="block text-sm font-medium text-slate-800">PDF</span>
+                            <span class="block text-xs text-slate-500">Multi-page: original + one page per color layer</span>
+                        </span>
+                    </label>
+                    <label class="fmt-option flex items-start gap-3 border border-slate-200 rounded-xl px-4 py-3 cursor-pointer hover:border-brand-400 transition-colors">
+                        <input type="radio" name="format" value="bmp" class="mt-1" />
+                        <span>
+                            <span class="block text-sm font-medium text-slate-800">BMP</span>
+                            <span class="block text-xs text-slate-500">Flattened image only — BMP has no layers</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Options -->
+            <div class="p-6 space-y-4">
+                <label class="block text-sm font-semibold text-slate-900 mb-1">3 · Options</label>
+
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="layers-check" name="layers" value="1" checked
+                           class="h-4 w-4 rounded border-slate-300 text-brand-600" />
+                    <label for="layers-check" class="text-sm text-slate-700">
+                        Extract color channel layers
+                        <span class="block text-xs text-slate-400">Red, Green, Blue (+ Alpha when present) as separate layers</span>
+                    </label>
+                </div>
+
+                <div class="grid sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Width (px, optional)</label>
+                        <input type="number" name="width" min="1" max="10000" placeholder="Original"
+                               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Height (px, optional)</label>
+                        <input type="number" name="height" min="1" max="10000" placeholder="Original"
+                               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Resolution (DPI)</label>
+                        <select name="dpi"
+                                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none">
+                            <option value="72">72 DPI (Web)</option>
+                            <option value="150">150 DPI</option>
+                            <option value="300" selected>300 DPI (Print)</option>
+                            <option value="600">600 DPI</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="p-6 flex items-center justify-between gap-4 bg-slate-50/60 rounded-b-2xl">
+                <p class="text-xs text-slate-400">Converting happens on the server — your file is not stored.</p>
+                <button type="submit" id="convert-btn"
+                        class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-medium px-6 py-2.5 rounded-xl transition-colors shadow-sm">
+                    <iconify-icon icon="lucide:download" class="text-base"></iconify-icon>
+                    Convert &amp; Download
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const input = document.getElementById("image-input");
+    const info = document.getElementById("file-info");
+    const err = document.getElementById("file-error");
+    const btn = document.getElementById("convert-btn");
+    const MAX_MB = {{ max_upload_mb }};
+    const ALLOWED = ["image/png", "image/jpeg", "image/webp"];
+
+    function showFileInfo(file) {
+        err.classList.add("hidden");
+        if (!file) {
+            info.classList.add("hidden");
+            return;
+        }
+        const okType = ALLOWED.includes(file.type) || /\.(png|jpe?g|webp)$/i.test(file.name);
+        const okSize = file.size <= MAX_MB * 1024 * 1024;
+        if (!okType) {
+            info.classList.add("hidden");
+            err.textContent = "Only PNG, JPEG or WebP images are supported.";
+            err.classList.remove("hidden");
+            input.setCustomValidity("Unsupported file type");
+            return;
+        }
+        if (!okSize) {
+            info.classList.add("hidden");
+            err.textContent = "File is larger than " + MAX_MB + " MB.";
+            err.classList.remove("hidden");
+            input.setCustomValidity("File too large");
+            return;
+        }
+        input.setCustomValidity("");
+        info.innerHTML = '<iconify-icon icon="lucide:file-image" class="text-base text-brand-600"></iconify-icon> ' +
+                         file.name + " · " + (file.size / 1024).toFixed(0) + " KB";
+        info.classList.remove("hidden");
+    }
+
+    input.addEventListener("change", () => showFileInfo(input.files[0]));
+
+    // drag & drop
+    const zone = document.getElementById("dropzone");
+    ["dragover", "dragenter"].forEach(ev =>
+        zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add("border-brand-400", "bg-blue-50/40"); }));
+    ["dragleave", "drop"].forEach(ev =>
+        zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove("border-brand-400", "bg-blue-50/40"); }));
+    zone.addEventListener("drop", e => {
+        if (e.dataTransfer.files.length) {
+            input.files = e.dataTransfer.files;
+            showFileInfo(input.files[0]);
+        }
+    });
+
+    // Layers checkbox disabled for BMP
+    const layersCheck = document.getElementById("layers-check");
+    function syncBmp() {
+        const fmt = document.querySelector('input[name="format"]:checked').value;
+        if (fmt === "bmp") {
+            layersCheck.disabled = true;
+            layersCheck.parentElement.parentElement.classList.add("opacity-50");
+        } else {
+            layersCheck.disabled = false;
+            layersCheck.parentElement.parentElement.classList.remove("opacity-50");
+        }
+    }
+    document.querySelectorAll('input[name="format"]').forEach(r => r.addEventListener("change", syncBmp));
+    syncBmp();
+
+    // submit guard
+    document.getElementById("convert-form").addEventListener("submit", function (e) {
+        err.classList.add("hidden");
+        if (!input.files.length) {
+            e.preventDefault();
+            err.textContent = "Please choose an image file to convert.";
+            err.classList.remove("hidden");
+            return;
+        }
+        if (!this.checkValidity()) {
+            e.preventDefault();
+            return;
+        }
+        btn.disabled = true;
+        btn.innerHTML = '<iconify-icon icon="lucide:loader-2" class="animate-spin text-base"></iconify-icon> Converting…';
+        // let the browser download begin, then restore the button
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<iconify-icon icon="lucide:download" class="text-base"></iconify-icon> Convert &amp; Download';
+        }, 4000);
+    });
+});
+</script>
+{% endblock %}

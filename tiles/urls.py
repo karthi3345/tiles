@@ -26,6 +26,9 @@ urlpatterns = [
     path('chat/', views.chat_view, name='chat'),
     path('generate-image/', views.generate_image_view, name='generate_image'),
 
+    # Image format converter (PNG/JPEG → TIFF/BMP/PSD/PDF, layered)
+    path('convert/', views.convert_image_view, name='convert_image'),
+
     # Search API
     path('api/location-search/', views.location_search, name='location_search'),
     path('api/find-nearest/', views.find_nearest_location, name='find_nearest_location'),
