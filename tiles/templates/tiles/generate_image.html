@@ -81,7 +81,7 @@
                             <p class="text-xs text-slate-500 line-clamp-2">{{ img.prompt }}</p>
                             <div class="flex items-center justify-between mt-3">
                                 <span class="text-[10px] text-slate-400">{{ img.created_at|date:"M d, Y H:i" }}</span>
-                                <span class="text-[10px] font-medium px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">PNG</span>
+                                <span class="text-[10px] font-medium px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">{% if '.jpg' in img.image or '.jpeg' in img.image %}JPG{% else %}PNG{% endif %}</span>
                             </div>
                         </div>
                     </div>
@@ -133,16 +133,26 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700">Output Format</label>
-                <div class="flex space-x-2 mt-1">
+                <div class="flex flex-wrap gap-x-4 gap-y-1 mt-1">
                     <label class="inline-flex items-center"><input type="radio" name="format" value="png" class="form-radio" checked /> PNG</label>
                     <label class="inline-flex items-center"><input type="radio" name="format" value="jpg" class="form-radio" /> JPG</label>
                     <label class="inline-flex items-center"><input type="radio" name="format" value="webp" class="form-radio" /> WebP</label>
+                    <label class="inline-flex items-center"><input type="radio" name="format" value="tiff" class="form-radio" /> TIFF</label>
+                    <label class="inline-flex items-center"><input type="radio" name="format" value="bmp" class="form-radio" /> BMP</label>
+                    <label class="inline-flex items-center"><input type="radio" name="format" value="psd" class="form-radio" /> PSD</label>
+                    <label class="inline-flex items-center"><input type="radio" name="format" value="pdf" class="form-radio" /> PDF</label>
                 </div>
             </div>
             <div id="qualityContainer" class="hidden">
                 <label class="block text-sm font-medium text-gray-700">Quality (JPG/WebP)</label>
                 <input type="range" id="qualitySlider" min="1" max="100" value="100" class="w-full" />
                 <div class="text-sm text-gray-500" id="qualityDisplay">100%</div>
+            </div>
+            <div id="layersContainer" class="hidden">
+                <div class="flex items-center">
+                    <input type="checkbox" id="extractLayers" class="h-4 w-4 text-indigo-600 border-gray-300 rounded" checked />
+                    <label for="extractLayers" class="ml-2 text-sm text-gray-600">Extract color channel layers <span class="text-xs text-gray-400">(TIFF/PSD/PDF pages)</span></label>
+                </div>
             </div>
         </div>
         <div class="mt-6 flex justify-end space-x-3">
@@ -186,19 +196,26 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById("qualitySlider").value = 100;
             document.getElementById("qualityDisplay").textContent = "100%";
             document.getElementById("qualityContainer").classList.add("hidden");
+            document.getElementById("layersContainer").classList.add("hidden");
             modal.classList.remove("hidden");
             modal.classList.add("flex");
         });
     });
 
-    // Show/hide quality slider based on format
+    // Show/hide quality + layers controls based on format
     document.querySelectorAll('input[name="format"]').forEach(radio => {
         radio.addEventListener("change", function () {
-            const container = document.getElementById("qualityContainer");
+            const quality = document.getElementById("qualityContainer");
+            const layers = document.getElementById("layersContainer");
             if (this.value === "jpg" || this.value === "webp") {
-                container.classList.remove("hidden");
+                quality.classList.remove("hidden");
             } else {
-                container.classList.add("hidden");
+                quality.classList.add("hidden");
+            }
+            if (this.value === "tiff" || this.value === "psd" || this.value === "pdf") {
+                layers.classList.remove("hidden");
+            } else {
+                layers.classList.add("hidden");
             }
         });
     });
@@ -243,6 +260,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const dpi = document.querySelector('input[name="dpi"]:checked').value;
         const format = document.querySelector('input[name="format"]:checked').value;
         const quality = qualitySlider.value;
+        const extractLayers = document.getElementById("extractLayers").checked;
         const url = new URL(currentDownloadUrl, window.location.origin);
         url.searchParams.set("filename", filename);
         url.searchParams.set("width", width);
@@ -251,6 +269,9 @@ document.addEventListener("DOMContentLoaded", function () {
         url.searchParams.set("format", format);
         if (format === "jpg" || format === "webp") {
             url.searchParams.set("quality", quality);
+        }
+        if ((format === "tiff" || format === "psd" || format === "pdf") && extractLayers) {
+            url.searchParams.set("layers", "1");
         }
         window.location.href = url.toString();
         modal.classList.remove("flex");

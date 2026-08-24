@@ -28,12 +28,14 @@
         <span class="inline-block w-2 h-2 bg-green-500 rounded-full ml-0.5"></span>
     </a>
     <a href="{% url 'tiles:generate_image' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">Generate</a>
+    <a href="{% url 'tiles:convert_image' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">Convert</a>
     {% else %}
     <a href="{% url 'accounts:login' %}?next={% url 'tiles:chat' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">
         AI Chat
         <span class="inline-block w-2 h-2 bg-green-500 rounded-full ml-0.5"></span>
     </a>
     <a href="{% url 'accounts:login' %}?next={% url 'tiles:generate_image' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">Generate</a>
+    <a href="{% url 'accounts:login' %}?next={% url 'tiles:convert_image' %}" class="px-4 py-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-blue-50 rounded-lg transition-colors">Convert</a>
     {% endif %}
 </div>
 
@@ -102,10 +104,13 @@
                 </div>
                 <div class="flex items-center gap-2">
                     {% if unread_count|default:0 > 0 %}
-                    <a href="{% url 'tiles:mark_all_notifications_read' %}"
-                       class="text-xs text-brand-600 hover:text-brand-700 font-semibold hover:underline">
-                        Mark all read
-                    </a>
+                    <form method="POST" action="{% url 'tiles:mark_all_notifications_read' %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="text-xs text-brand-600 hover:text-brand-700 font-semibold hover:underline">
+                            Mark all read
+                        </button>
+                    </form>
                     {% endif %}
                     <a href="{% url 'tiles:notifications' %}"
                        class="text-xs text-slate-500 hover:text-slate-700 font-medium hover:underline">

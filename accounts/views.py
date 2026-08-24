@@ -129,11 +129,27 @@ def login_view(request):
         email = request.POST.get("email")
         password = request.POST.get("password")
 
-        user = authenticate(
-            request,
-            username=email,
-            password=password
-        )
+        # The login form collects an email, but the form field is also
+        # commonly filled with a username. Try both identifiers so an
+        # existing account always logs in.
+        user = None
+        for identifier in (email, None):
+            if identifier:
+                user = authenticate(
+                    request,
+                    username=identifier,
+                    password=password
+                )
+                if user is not None:
+                    break
+
+        # Fallback: if the submitted value is not a username, try matching
+        # it against the email column directly.
+        if user is None and email:
+            from django.contrib.auth.models import User
+            match = User.objects.filter(email__iexact=email).first()
+            if match and match.check_password(password):
+                user = match
 
         if user is not None:
 

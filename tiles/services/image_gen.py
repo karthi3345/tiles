@@ -1,26 +1,130 @@
 import base64
 import io
 import uuid
+import math
 import requests
 
-from PIL import Image
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile
 
 
+# ─────────────────────────────────────────────────────────────
+# Prompt engineering — force SDXL to produce real tile products
+# ─────────────────────────────────────────────────────────────
+
 STYLE_PREFIXES = {
-    "realistic": "photorealistic, ultra realistic, 8k, ",
-    "artistic": "artistic, creative, ",
-    "minimalist": "minimalist, clean, modern, ",
-    "luxury": "luxury, premium, elegant, ",
-    "industrial": "industrial, raw, urban, ",
+    "realistic": (
+        "professional tile product photography, photorealistic, "
+        "true-to-life material colors and surface texture, "
+        "macro detail of the tile face, sharp focus, 8k, "
+    ),
+    "artistic": (
+        "decorative artisan tile design, handcrafted painterly pattern, "
+        "rich saturated glaze colors, artistic surface detail, "
+    ),
+    "minimalist": (
+        "minimalist tile design, clean simple modern pattern, "
+        "matt surface, neutral tones, precise uniform edges, "
+    ),
+    "luxury": (
+        "luxury premium tile, high-end marble and stone look, "
+        "polished reflective surface, elegant veining, opulent finish, "
+    ),
+    "industrial": (
+        "industrial tile design, raw concrete and cement texture, "
+        "strong matte surface, rugged urban material feel, "
+    ),
 }
 
 TILE_CTX = (
-    "ceramic tile design, porcelain tile, wall tile, floor tile, "
-    "premium tile texture, product photography, studio lighting, "
-    "white background, highly detailed"
+    "a single square tile fills the entire frame edge to edge, "
+    "flat top-down front view, perfectly flat surface, "
+    "seamless texture across the whole tile face, "
+    "visible material structure of ceramic porcelain tile, "
+    "sharp focus over the entire surface, factory tile catalog photo, "
+    "even studio lighting, no background, no props, no room, "
+    "no shadows at the edges, no border, no frame"
 )
+
+
+# ─────────────────────────────────────────────────────────────
+# Post-processing — turn the raw SDXL output into a tile product
+# ─────────────────────────────────────────────────────────────
+
+def _draw_tile_grid(img, cells=2, line_color=(60, 60, 60, 55), line_w=2):
+    """Draw subtle grout lines over the image so the surface reads as a
+    tiled wall/floor rather than one abstract square."""
+    overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    w, h = img.size
+    for i in range(1, cells):
+        x = round(w * i / cells)
+        y = round(h * i / cells)
+        draw.line([(x, 0), (x, h)], fill=line_color, width=line_w)
+        draw.line([(0, y), (w, y)], fill=line_color, width=line_w)
+    return Image.alpha_composite(img.convert("RGBA"), overlay)
+
+
+def _studio_light(img):
+    """Radial vignette + soft diagonal highlight sweep, mimicking studio
+    product photography lighting."""
+    w, h = img.size
+    mask = Image.new("L", (w, h), 0)
+    d = ImageDraw.Draw(mask)
+    # Vignette: darker corners via concentric ellipses
+    steps = 40
+    max_dim = math.hypot(w, h) / 2
+    cx, cy = w / 2, h / 2
+    for i in range(steps):
+        t = i / steps
+        radius = max_dim * (0.55 + 0.55 * t)
+        alpha = int(38 * (t ** 1.6))
+        d.ellipse(
+            [cx - radius, cy - radius, cx + radius, cy + radius],
+            outline=alpha, width=int(max_dim / steps) + 2,
+        )
+    dark = Image.new("RGBA", (w, h), (0, 0, 0, 255))
+    vignette = Image.composite(dark, Image.new("RGBA", (w, h), (0, 0, 0, 0)), mask)
+
+    # Soft diagonal highlight sweep from top-left
+    sweep = Image.new("L", (w, h), 0)
+    sd = ImageDraw.Draw(sweep)
+    for i in range(0, int(w * 1.4), 6):
+        band = int(26 * max(0.0, 1 - abs(i - w * 0.35) / (w * 0.5)))
+        sd.line([(i, 0), (i - int(w * 0.4), h)], fill=band, width=7)
+    sweep = sweep.filter(ImageFilter.GaussianBlur(24))
+    # White highlight layer whose alpha comes from the sweep (max ~35%)
+    white = Image.new("RGBA", (w, h), (255, 255, 255, 255))
+    highlight = Image.merge(
+        "RGBA", (white.split()[0], white.split()[1], white.split()[2],
+                 sweep.point(lambda p: int(p * 0.35)))
+    )
+
+    out = Image.alpha_composite(img.convert("RGBA"), vignette)
+    out = Image.alpha_composite(out, highlight)
+    return out
+
+
+def _postprocess(img):
+    """Apply the full 'real tile product' pipeline to a raw generated image."""
+    img = img.convert("RGB")
+
+    # Tile-relevant chromatic boost
+    img = ImageEnhance.Contrast(img).enhance(1.08)
+    img = ImageEnhance.Color(img).enhance(1.06)
+    img = ImageEnhance.Brightness(img).enhance(1.04)
+
+    # Slight sharpening for surface detail
+    img = img.filter(ImageFilter.UnsharpMask(radius=2, percent=60, threshold=3))
+
+    # Grout-line grid so the structure reads as tiles
+    img = _draw_tile_grid(img)
+
+    # Studio lighting: vignette + highlight sweep
+    img = _studio_light(img)
+
+    return img.convert("RGB")
 
 
 class CloudflareImageGen:
@@ -43,17 +147,10 @@ class CloudflareImageGen:
 
         content_type = response.headers.get("Content-Type", "")
 
-        print("=" * 60)
-        print("STATUS :", response.status_code)
-        print("CONTENT TYPE :", content_type)
-        print("=" * 60)
-
         if content_type.startswith("image/"):
             return response.content
 
         data = response.json()
-
-        print(data)
 
         if not data.get("success"):
             errors = data.get("errors", [])
@@ -67,6 +164,15 @@ class CloudflareImageGen:
 
         return None
 
+    def build_prompt(self, prompt, style="realistic"):
+        """Compose the full SDXL prompt. Public so tests can verify it."""
+        return (
+            STYLE_PREFIXES.get(style, STYLE_PREFIXES["realistic"])
+            + prompt
+            + ", "
+            + TILE_CTX
+        )
+
     def generate(self, prompt, style="realistic"):
 
         if not self.is_configured():
@@ -76,12 +182,7 @@ class CloudflareImageGen:
                 "error": "Cloudflare AI not configured",
             }
 
-        full_prompt = (
-            STYLE_PREFIXES.get(style, "")
-            + prompt
-            + ", "
-            + TILE_CTX
-        )
+        full_prompt = self.build_prompt(prompt, style)
 
         try:
 
@@ -98,11 +199,6 @@ class CloudflareImageGen:
                 timeout=120,
             )
 
-            print("=" * 60)
-            print(response.status_code)
-            print(response.text[:1000])
-            print("=" * 60)
-
             response.raise_for_status()
 
             img_bytes = self._get_image_bytes(response)
@@ -114,24 +210,22 @@ class CloudflareImageGen:
                     "error": "No image returned by Cloudflare",
                 }
 
-            image = Image.open(io.BytesIO(img_bytes))
-
-            if image.mode != "RGB":
-                image = image.convert("RGB")
+            # Post-process into a realistic tile product photo
+            image = _postprocess(Image.open(io.BytesIO(img_bytes)))
 
             buffer = io.BytesIO()
 
-            image.save(buffer, format="PNG")
+            image.save(buffer, format="JPEG", quality=92)
 
             buffer.seek(0)
 
-            filename = f"tile_{uuid.uuid4().hex}.png"
+            filename = f"tile_{uuid.uuid4().hex}.jpg"
 
             image_file = InMemoryUploadedFile(
                 buffer,
                 None,
                 filename,
-                "image/png",
+                "image/jpeg",
                 buffer.getbuffer().nbytes,
                 None,
             )
@@ -143,8 +237,6 @@ class CloudflareImageGen:
             }
 
         except Exception as e:
-
-            print("IMAGE ERROR :", str(e))
 
             return {
                 "success": False,

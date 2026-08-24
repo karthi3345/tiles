@@ -5,7 +5,7 @@ from django.test import TestCase, Client, RequestFactory
 from django.contrib.auth.models import User
 from tiles.models import (
     City, Country, State, Village, TileCategory, TileProduct,
-    Order, OrderItem, Payment, Notification,
+    Order, OrderItem, Payment, Notification, GeneratedImage,
 )
 from tiles.views import _haversine_distance
 from tiles.cart import Cart
@@ -1293,3 +1293,571 @@ class GlobalSearchTest(TestCase):
             self.skipTest('orders table not migrated')
         resp = self._get(q='globaria')
         self.assertContains(resp, 'ORDER-GLOBARIA-1')
+
+
+#─────────────────────────────────────────────────────────────────────────
+# Image Format Converter (PNG/JPEG → TIFF / BMP / PSD / PDF, layered)
+# Spec: .drytis/specs/image-format-converter.md
+#─────────────────────────────────────────────────────────────────────────
+
+from io import BytesIO
+
+from PIL import Image
+
+from tiles.services import image_convert as ic
+
+
+def _gradient_png(w=40, h=30, with_alpha=True):
+    """Build an in-memory test image with distinct per-channel data."""
+    mode = "RGBA" if with_alpha else "RGB"
+    img = Image.new(mode, (w, h))
+    px = img.load()
+    for y in range(h):
+        for x in range(w):
+            alpha = 255 if x < w // 2 else 0
+            px[x, y] = (x * 6 % 256, y * 8 % 256, (x + y) * 3 % 256,
+                        alpha if with_alpha else 255)
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return buf
+
+
+def _jpeg(w=24, h=24):
+    buf = BytesIO()
+    Image.new("RGB", (w, h), (10, 20, 30)).save(buf, format="JPEG")
+    buf.seek(0)
+    return buf
+
+
+class ImageConvertServiceTest(TestCase):
+    """Unit tests for tiles/services/image_convert.py."""
+
+    # ── channel extraction ────────────────────────────────────────────
+
+    def test_extract_layers_rgb_three_layers(self):
+        img = Image.new("RGB", (6, 6), (8, 60, 200))
+        layers = ic.extract_channel_layers(img)
+        self.assertEqual([name for name, _ in layers], ["Red", "Green", "Blue"])
+        for idx, (_, layer) in enumerate(layers):
+            colors = layer.getextrema()
+            expected = (8, 60, 200)[idx]
+            self.assertEqual(colors[idx], (expected, expected))
+            self.assertEqual(colors[(idx + 1) % 3], (0, 0))
+            self.assertEqual(colors[(idx + 2) % 3], (0, 0))
+
+    def test_extract_layers_rgba_includes_alpha(self):
+        img = Image.new("RGBA", (6, 6), (1, 2, 3, 128))
+        layers = ic.extract_channel_layers(img)
+        self.assertEqual([name for name, _ in layers],
+                         ["Red", "Green", "Blue", "Alpha"])
+
+    def test_extract_layers_grayscale_promoted(self):
+        layers = ic.extract_channel_layers(Image.new("L", (4, 4), 77))
+        self.assertEqual([name for name, _ in layers], ["Red", "Green", "Blue"])
+
+    # ── end-to-end conversions ────────────────────────────────────────
+
+    def test_convert_tiff_layers_on(self):
+        out = ic.convert_image(_gradient_png(), "tiff", layers=True)
+        self.assertEqual(ic.count_pages(out), 5)  # original + R/G/B/A
+        out.seek(0)
+        img = Image.open(out)
+        self.assertEqual(img.format, "TIFF")
+
+    def test_convert_tiff_layers_off_single_page(self):
+        out = ic.convert_image(_gradient_png(), "tiff", layers=False)
+        self.assertEqual(ic.count_pages(out), 1)
+
+    def test_convert_jpeg_no_alpha_layer(self):
+        out = ic.convert_image(_jpeg(), "tiff", layers=True)
+        self.assertEqual(ic.count_pages(out), 4)  # original + R/G/B only
+
+    def test_convert_pdf_multipage(self):
+        out = ic.convert_image(_gradient_png(), "pdf", layers=True)
+        data = out.getvalue()
+        self.assertEqual(data[:5], b"%PDF-")
+        self.assertEqual(ic.count_pages(out), 5)
+
+    def test_convert_pdf_layers_off_single_page(self):
+        out = ic.convert_image(_gradient_png(), "pdf", layers=False)
+        self.assertEqual(ic.count_pages(out), 1)
+
+    def test_convert_psd_layers_named(self):
+        from pytoshop import PsdFile
+        out = ic.convert_image(_gradient_png(), "psd", layers=True)
+        data = out.getvalue()
+        self.assertEqual(data[:4], b"8BPS")
+        psd = PsdFile.read(BytesIO(data))
+        names = [r.name for r in
+                 psd.layer_and_mask_info.layer_info.layer_records]
+        self.assertEqual(names, ["Alpha Layer", "Blue Layer",
+                                 "Green Layer", "Red Layer", "Background"])
+
+    def test_convert_psd_layers_off_single_layer(self):
+        from pytoshop import PsdFile
+        out = ic.convert_image(_gradient_png(), "psd", layers=False)
+        psd = PsdFile.read(BytesIO(out.getvalue()))
+        names = [r.name for r in
+                 psd.layer_and_mask_info.layer_info.layer_records]
+        self.assertEqual(names, ["Background"])
+
+    def test_convert_psd_opens_in_pil(self):
+        out = ic.convert_image(_gradient_png(), "psd", layers=True)
+        img = Image.open(BytesIO(out.getvalue()))
+        img.load()
+        self.assertEqual(img.size, (40, 30))
+
+    def test_convert_bmp_flattened(self):
+        out = ic.convert_image(_gradient_png(), "bmp", layers=True)
+        img = Image.open(BytesIO(out.getvalue()))
+        self.assertEqual(img.format, "BMP")
+        self.assertEqual(img.size, (40, 30))
+
+    def test_convert_resizes_when_dimensions_given(self):
+        out = ic.convert_image(_gradient_png(), "tiff", layers=False,
+                               width=20, height=15)
+        img = Image.open(BytesIO(out.getvalue()))
+        self.assertEqual(img.size, (20, 15))
+
+    def test_convert_preserves_dpi(self):
+        out = ic.convert_image(_gradient_png(), "tiff", layers=False, dpi=600)
+        img = Image.open(BytesIO(out.getvalue()))
+        self.assertEqual(img.info.get("dpi"), (600.0, 600.0))
+
+    def test_convert_dpi_zero_defaults_to_300(self):
+        out = ic.convert_image(_gradient_png(), "tiff", layers=False, dpi=0)
+        img = Image.open(BytesIO(out.getvalue()))
+        self.assertEqual(img.info.get("dpi"), (300.0, 300.0))
+
+    def test_convert_cmyk_jpeg(self):
+        buf = BytesIO()
+        Image.new("CMYK", (8, 8)).save(buf, format="JPEG")
+        buf.seek(0)
+        out = ic.convert_image(buf, "tiff", layers=True)
+        self.assertEqual(ic.count_pages(out), 4)
+
+    # ── error handling ────────────────────────────────────────────────
+
+    def test_reject_corrupt_input(self):
+        with self.assertRaises(ValueError):
+            ic.convert_image(BytesIO(b"this is not an image"), "tiff")
+
+    def test_reject_gif_source(self):
+        buf = BytesIO()
+        Image.new("RGB", (4, 4)).save(buf, format="GIF")
+        buf.seek(0)
+        with self.assertRaises(ValueError):
+            ic.convert_image(buf, "tiff")
+
+    def test_reject_bad_target_format(self):
+        with self.assertRaises(ValueError):
+            ic.convert_image(_gradient_png(), "gif")
+
+    def test_reject_oversized_source(self):
+        class BigFile(BytesIO):
+            def seek(self, *a):
+                if a[0] == 0:
+                    return 0
+                # pretend to be a >10MB file
+                return ic.MAX_UPLOAD_BYTES + 1 if len(a) > 1 else 0
+
+        # BytesIO-based oversized probe: seek(0, 2) returns end position
+        buf = BytesIO(b"\x89PNG" + b"0" * (ic.MAX_UPLOAD_BYTES + 1))
+        with self.assertRaises(ValueError):
+            ic.convert_image(buf, "tiff")
+
+    def test_metadata_probe(self):
+        meta = ic.get_image_metadata(_gradient_png())
+        self.assertEqual(meta["format"], "PNG")
+        self.assertTrue(meta["has_alpha"])
+        meta_jpg = ic.get_image_metadata(_jpeg())
+        self.assertFalse(meta_jpg["has_alpha"])
+
+
+class ConvertPageIntegrationTest(TestCase):
+    """Integration tests for the /convert/ page."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="conv_user", password="pw-12345-x",
+            email="conv@example.com")
+        self.client.force_login(self.user)
+
+    def test_get_renders_form(self):
+        resp = self.client.get("/convert/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Image Format Converter")
+        self.assertContains(resp, 'name="format"')
+
+    def test_anonymous_redirected_to_login(self):
+        self.client.logout()
+        resp = self.client.get("/convert/")
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("/login", resp["Location"])
+
+    def test_post_png_to_tiff_downloads(self):
+        png = _gradient_png().read()
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        upload = SimpleUploadedFile("in.png", png, content_type="image/png")
+        resp = self.client.post("/convert/", {
+            "image": upload, "format": "tiff", "layers": "1",
+            "dpi": "300", "width": "", "height": "",
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "image/tiff")
+        self.assertIn("attachment", resp["Content-Disposition"])
+        self.assertIn(".tiff", resp["Content-Disposition"])
+        pages = ic.count_pages(BytesIO(b"".join(resp.streaming_content)
+                                       if hasattr(resp, "streaming_content")
+                                       else resp.content))
+        self.assertEqual(pages, 5)
+        # notification created
+        self.assertTrue(Notification.objects.filter(
+            user=self.user, notif_type="download_complete").exists())
+
+    def test_post_png_to_psd(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        upload = SimpleUploadedFile("in.png", _gradient_png(20, 20).read(),
+                                    content_type="image/png")
+        resp = self.client.post("/convert/", {
+            "image": upload, "format": "psd", "layers": "1", "dpi": "300",
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"],
+                         "image/vnd.adobe.photoshop")
+        from pytoshop import PsdFile
+        psd = PsdFile.read(BytesIO(resp.content))
+        names = [r.name for r in
+                 psd.layer_and_mask_info.layer_info.layer_records]
+        self.assertEqual(len(names), 5)
+
+    def test_post_png_to_pdf(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        upload = SimpleUploadedFile("in.png", _gradient_png(20, 20).read(),
+                                    content_type="image/png")
+        resp = self.client.post("/convert/", {
+            "image": upload, "format": "pdf", "layers": "1", "dpi": "72",
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "application/pdf")
+        self.assertEqual(resp.content[:5], b"%PDF-")
+        self.assertEqual(ic.count_pages(BytesIO(resp.content)), 5)
+
+    def test_post_png_to_bmp_flattened(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        upload = SimpleUploadedFile("in.png", _gradient_png(20, 20).read(),
+                                    content_type="image/png")
+        resp = self.client.post("/convert/", {
+            "image": upload, "format": "bmp", "layers": "1", "dpi": "300",
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "image/bmp")
+        img = Image.open(BytesIO(resp.content))
+        self.assertEqual(img.format, "BMP")
+
+    def test_post_without_file_shows_error(self):
+        resp = self.client.post("/convert/", {"format": "tiff"})
+        self.assertEqual(resp.status_code, 400)
+        self.assertContains(resp, "choose an image", status_code=400)
+
+    def test_post_invalid_format_rejected(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        upload = SimpleUploadedFile("in.png", _gradient_png().read(),
+                                    content_type="image/png")
+        resp = self.client.post("/convert/", {
+            "image": upload, "format": "exe",
+        })
+        self.assertEqual(resp.status_code, 400)
+
+    def test_post_garbage_shows_user_safe_error(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        upload = SimpleUploadedFile("in.png", b"garbage bytes",
+                                    content_type="image/png")
+        resp = self.client.post("/convert/", {
+            "image": upload, "format": "tiff",
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "valid image")
+
+    def test_post_gif_shows_unsupported_error(self):
+        buf = BytesIO()
+        Image.new("RGB", (4, 4)).save(buf, format="GIF")
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        upload = SimpleUploadedFile("in.gif", buf.getvalue(),
+                                    content_type="image/gif")
+        resp = self.client.post("/convert/", {
+            "image": upload, "format": "tiff",
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, "Unsupported source format")
+
+    def test_nav_link_present(self):
+        resp = self.client.get("/convert/")
+        self.assertContains(resp, "/convert/")
+
+    def test_layers_off_single_page(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        upload = SimpleUploadedFile("in.png", _gradient_png(20, 20).read(),
+                                    content_type="image/png")
+        resp = self.client.post("/convert/", {
+            "image": upload, "format": "tiff", "layers": "",
+            "dpi": "300",
+        })
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(ic.count_pages(BytesIO(resp.content)), 1)
+
+
+class DownloadFormatsIntegrationTest(TestCase):
+    """Integration tests for the new formats on /download/<pk>/."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="dl_user", password="pw-12345-x",
+            email="dl@example.com")
+        self.client.force_login(self.user)
+        # GeneratedImage stores a URL; requests.get is mocked below.
+        self.gen = GeneratedImage.objects.create(
+            user=self.user, prompt="test tile",
+            image="https://example.com/tile.png")
+
+    def _mock_fetch(self):
+        """Patch requests.get so it returns our test PNG bytes."""
+        payload = _gradient_png().read()
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = payload
+        return patch("tiles.views.requests.get", return_value=mock_resp)
+
+    def test_download_tiff_with_layers(self):
+        with self._mock_fetch():
+            resp = self.client.get(
+                "/download/%d/?format=tiff&layers=1&width=64&height=48&dpi=300"
+                % self.gen.id)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "image/tiff")
+        self.assertIn(".tiff", resp["Content-Disposition"])
+        self.assertEqual(ic.count_pages(BytesIO(resp.content)), 5)
+        img = Image.open(BytesIO(resp.content))
+        self.assertEqual(img.size, (64, 48))
+
+    def test_download_psd_with_layers(self):
+        with self._mock_fetch():
+            resp = self.client.get(
+                "/download/%d/?format=psd&layers=1&width=32&height=32"
+                % self.gen.id)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content[:4], b"8BPS")
+        from pytoshop import PsdFile
+        psd = PsdFile.read(BytesIO(resp.content))
+        names = [r.name for r in
+                 psd.layer_and_mask_info.layer_info.layer_records]
+        self.assertEqual(len(names), 5)
+
+    def test_download_pdf(self):
+        with self._mock_fetch():
+            resp = self.client.get(
+                "/download/%d/?format=pdf&layers=1&width=32&height=32"
+                % self.gen.id)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "application/pdf")
+        self.assertEqual(resp.content[:5], b"%PDF-")
+
+    def test_download_bmp(self):
+        with self._mock_fetch():
+            resp = self.client.get(
+                "/download/%d/?format=bmp&width=32&height=32" % self.gen.id)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "image/bmp")
+        self.assertEqual(Image.open(BytesIO(resp.content)).format, "BMP")
+
+    def test_download_png_regression(self):
+        with self._mock_fetch():
+            resp = self.client.get(
+                "/download/%d/?format=png&width=32&height=32" % self.gen.id)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "image/png")
+        img = Image.open(BytesIO(resp.content))
+        self.assertEqual(img.format, "PNG")
+        self.assertEqual(img.size, (32, 32))
+
+    def test_download_jpg_regression(self):
+        with self._mock_fetch():
+            resp = self.client.get(
+                "/download/%d/?format=jpg&width=32&height=32&quality=90"
+                % self.gen.id)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Content-Type"], "image/jpeg")
+
+    def test_download_requires_owner(self):
+        other = User.objects.create_user(username="other", password="pw")
+        self.client.force_login(other)
+        resp = self.client.get("/download/%d/?format=tiff" % self.gen.id)
+        self.assertEqual(resp.status_code, 404)
+
+    def test_download_invalid_format_returns_400(self):
+        # corrupt payload → ImageConversionError → 400
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.content = b"not an image"
+        with patch("tiles.views.requests.get", return_value=mock_resp):
+            resp = self.client.get(
+                "/download/%d/?format=psd&width=32&height=32" % self.gen.id)
+        self.assertEqual(resp.status_code, 400)
+
+
+# ═══════════════════════════════════════════════════════════
+# Mark-all-read fix + realistic tile generation
+# ═══════════════════════════════════════════════════════════
+
+from io import BytesIO
+from tiles.services.image_gen import (
+    _postprocess, _draw_tile_grid, _studio_light, TILE_CTX, STYLE_PREFIXES,
+    image_gen_service,
+)
+
+
+class MarkAllReadFixTest(TestCase):
+    """The navbar 'Mark all read' must be a POST form, and POSTing the
+    endpoint must mark every unread notification as read."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='markall@test.com', password='TestPass123!',
+            email='markall@test.com', first_name='Mark',
+        )
+
+    def _make_unread(self, n=3):
+        for i in range(n):
+            Notification.objects.create(
+                user=self.user, notif_type='general',
+                message=f'unread {i}', is_read=False,
+            )
+
+    def test_post_marks_all_read(self):
+        self._make_unread(3)
+        self.client.login(username='markall@test.com', password='TestPass123!')
+        resp = self.client.post('/notifications/mark-all-read/')
+        self.assertEqual(resp.status_code, 302)
+        self.assertEqual(
+            Notification.objects.filter(user=self.user, is_read=False).count(), 0)
+        self.assertEqual(
+            Notification.objects.filter(user=self.user, is_read=True).count(), 3)
+
+    def test_get_returns_405(self):
+        self.client.login(username='markall@test.com', password='TestPass123!')
+        resp = self.client.get('/notifications/mark-all-read/')
+        self.assertEqual(resp.status_code, 405)
+
+    def test_navbar_dropdown_renders_post_form(self):
+        """The navbar must render a POST form with a CSRF token for
+        'Mark all read' (was a plain GET <a> → 405 bug)."""
+        self._make_unread(2)
+        self.client.login(username='markall@test.com', password='TestPass123!')
+        resp = self.client.get('/')
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode()
+        self.assertIn('action="/notifications/mark-all-read/"', html)
+        self.assertIn('Mark all read', html)
+        # CSRF token input must be inside that form
+        self.assertIn('csrfmiddlewaretoken', html)
+
+    def test_post_does_not_touch_other_users(self):
+        other = User.objects.create_user(username='other2@test.com', password='pw')
+        Notification.objects.create(user=other, notif_type='general',
+                                    message="someone else's", is_read=False)
+        self._make_unread(1)
+        self.client.login(username='markall@test.com', password='TestPass123!')
+        self.client.post('/notifications/mark-all-read/')
+        self.assertEqual(
+            Notification.objects.filter(user=other, is_read=False).count(), 1)
+
+
+class RealisticTileGenerationTest(TestCase):
+    """Post-processing + prompt engineering for realistic tile output."""
+
+    def _flat_image(self, size=(256, 256), color=(128, 128, 128)):
+        return Image.new('RGB', size, color)
+
+    def test_postprocess_returns_rgb_same_size(self):
+        out = _postprocess(self._flat_image())
+        self.assertEqual(out.mode, 'RGB')
+        self.assertEqual(out.size, (256, 256))
+
+    def test_postprocess_changes_pixels(self):
+        raw = self._flat_image()
+        out = _postprocess(raw)
+        self.assertNotEqual(
+            list(raw.getdata()), list(out.getdata()))
+
+    def test_draw_tile_grid_changes_pixels(self):
+        raw = self._flat_image()
+        out = _draw_tile_grid(raw, cells=2)
+        self.assertNotEqual(list(raw.convert('RGBA').getdata()),
+                            list(out.getdata()))
+
+    def test_studio_light_returns_rgba_same_size(self):
+        out = _studio_light(self._flat_image())
+        self.assertEqual(out.size, (256, 256))
+        self.assertEqual(out.mode, 'RGBA')
+
+    def test_prompt_contains_tile_catalog_language(self):
+        p = image_gen_service.build_prompt('white marble tile', 'realistic')
+        self.assertIn('single square tile fills the entire frame', p)
+        self.assertIn('factory tile catalog photo', p)
+        self.assertIn('white marble tile', p)
+
+    def test_prompt_unknown_style_uses_realistic(self):
+        p = image_gen_service.build_prompt('x', 'nonexistent-style')
+        self.assertIn('professional tile product photography', p)
+
+    def test_style_prefixes_cover_all_form_choices(self):
+        for style in ('realistic', 'artistic', 'minimalist', 'luxury', 'industrial'):
+            self.assertIn(style, STYLE_PREFIXES)
+
+    def test_postprocess_flat_color_still_flat_mid(self):
+        """Vignette/grid change the image but the center pixel stays close
+        to the original flat color (no catastrophic distortion)."""
+        raw = self._flat_image(color=(150, 150, 150))
+        out = _postprocess(raw)
+        r, g, b = out.getpixel((128, 128))
+        for c in (r, g, b):
+            self.assertTrue(110 <= c <= 200)
+
+
+class EmailLoginTest(TestCase):
+    """Login form posts an email but ModelBackend looks up by username —
+    verify the view falls back to email-column matching so existing
+    accounts can always log in."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(
+            username='emaillogin', email='emaillogin@test.com',
+            password='TestPass123!', first_name='Email',
+        )
+
+    def test_login_with_email(self):
+        resp = self.client.post('/accounts/login/', {
+            'email': 'emaillogin@test.com', 'password': 'TestPass123!'})
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('_auth_user_id', self.client.session)
+
+    def test_login_with_username_still_works(self):
+        resp = self.client.post('/accounts/login/', {
+            'email': 'emaillogin', 'password': 'TestPass123!'})
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn('_auth_user_id', self.client.session)
+
+    def test_login_wrong_password_rejected(self):
+        resp = self.client.post('/accounts/login/', {
+            'email': 'emaillogin@test.com', 'password': 'WrongPass'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn('_auth_user_id', self.client.session)
+
+    def test_login_unknown_email_rejected(self):
+        resp = self.client.post('/accounts/login/', {
+            'email': 'nobody@test.com', 'password': 'TestPass123!'})
+        self.assertEqual(resp.status_code, 200)
+        self.assertNotIn('_auth_user_id', self.client.session)
