@@ -3,6 +3,8 @@
 
 <!-- Include Fabric.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+<!-- Include jsPDF for PDF export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <style>
     .studio-container {
@@ -329,9 +331,101 @@
                 <div id="calcResult" class="mt-2 text-xs text-gray-600 hidden bg-gray-50 p-2 rounded"></div>
             </div>
             
+            <!-- PHASE 9: Seamless Tile Tool -->
             <div class="tool-section">
-                <h3>8. Export</h3>
-                <button class="btn-studio" onclick="downloadDesign()">⬇ Download High-Res</button>
+                <h3>9. Seamless Tile Tool (Phase 9)</h3>
+                <p class="text-xs text-gray-500 mb-2">Select image → make edges seamlessly tileable.</p>
+                <button class="btn-studio secondary" onclick="makeSeamless()">🔄 Make Seamless</button>
+                <div class="range-group mt-2">
+                    <label><span>Blend Edge Width</span> <span id="valSeamless">20%</span></label>
+                    <input type="range" id="sliderSeamless" min="5" max="50" step="1" value="20" oninput="document.getElementById('valSeamless').innerText=this.value+'%'">
+                </div>
+            </div>
+
+            <!-- PHASE 16: Before & After -->
+            <div class="tool-section">
+                <h3>16. Before & After (Phase 16)</h3>
+                <p class="text-xs text-gray-500 mb-2">Capture original then compare side by side.</p>
+                <button class="btn-studio secondary" onclick="captureOriginal()">📸 Capture Original State</button>
+                <button class="btn-studio secondary" onclick="showBeforeAfter()">↔ Before / After Slider</button>
+            </div>
+
+            <!-- PHASE 21: Brand & Watermark -->
+            <div class="tool-section">
+                <h3>21. Brand & Watermark (Phase 21)</h3>
+                <div class="flex gap-2 mb-2">
+                    <input type="text" id="watermarkText" class="w-full border rounded p-1 text-sm" placeholder="Company name / SKU..." value="MAHASHANKH">
+                </div>
+                <div class="flex gap-2 mb-2">
+                    <select id="watermarkPos" class="w-full border rounded p-1 text-sm">
+                        <option value="br">Bottom Right</option>
+                        <option value="bl">Bottom Left</option>
+                        <option value="tr">Top Right</option>
+                        <option value="tl">Top Left</option>
+                        <option value="center">Center</option>
+                    </select>
+                    <input type="color" id="watermarkColor" value="#ffffff" class="h-8 border-0 cursor-pointer">
+                </div>
+                <div class="range-group">
+                    <label><span>Opacity</span> <span id="valWmOpacity">50%</span></label>
+                    <input type="range" id="sliderWmOpacity" min="10" max="100" value="50" oninput="document.getElementById('valWmOpacity').innerText=this.value+'%'">
+                </div>
+                <div class="btn-row">
+                    <button class="btn-studio secondary" onclick="addWatermark()">Add Text</button>
+                    <button class="btn-studio secondary" onclick="addLogoWatermark()">Add Logo</button>
+                </div>
+            </div>
+
+            <!-- PHASE 26: Pattern Library -->
+            <div class="tool-section">
+                <h3>26. Pattern Library (Phase 26)</h3>
+                <p class="text-xs text-gray-500 mb-2">Load a built-in tile style template.</p>
+                <div class="grid grid-cols-3 gap-1" id="patternLibrary">
+                    <div class="p-1 border rounded cursor-pointer hover:border-blue-400" onclick="loadPattern('marble')" title="Marble">
+                        <div style="height:40px;background:linear-gradient(135deg,#f5f5f0 0%,#e8e8e0 40%,#d0cfc8 60%,#f0ede6 100%);border-radius:3px"></div>
+                        <p class="text-xs text-center mt-1 text-gray-600">Marble</p>
+                    </div>
+                    <div class="p-1 border rounded cursor-pointer hover:border-blue-400" onclick="loadPattern('wood')" title="Wood">
+                        <div style="height:40px;background:linear-gradient(90deg,#8B6914 0%,#A0783C 30%,#8B6914 60%,#7A5C14 100%);border-radius:3px"></div>
+                        <p class="text-xs text-center mt-1 text-gray-600">Wood</p>
+                    </div>
+                    <div class="p-1 border rounded cursor-pointer hover:border-blue-400" onclick="loadPattern('concrete')" title="Concrete">
+                        <div style="height:40px;background:linear-gradient(135deg,#9e9e9e 0%,#bdbdbd 50%,#9e9e9e 100%);border-radius:3px"></div>
+                        <p class="text-xs text-center mt-1 text-gray-600">Concrete</p>
+                    </div>
+                    <div class="p-1 border rounded cursor-pointer hover:border-blue-400" onclick="loadPattern('terrazzo')" title="Terrazzo">
+                        <div style="height:40px;background:#e8e8d0;background-image:radial-gradient(circle at 20% 30%, #c0b080 3px, transparent 3px),radial-gradient(circle at 70% 60%, #d0a060 2px, transparent 2px),radial-gradient(circle at 50% 80%, #b09070 2px, transparent 2px);border-radius:3px"></div>
+                        <p class="text-xs text-center mt-1 text-gray-600">Terrazzo</p>
+                    </div>
+                    <div class="p-1 border rounded cursor-pointer hover:border-blue-400" onclick="loadPattern('geometric')" title="Geometric">
+                        <div style="height:40px;background:repeating-linear-gradient(45deg,#334155 0,#334155 10px,#f1f5f9 10px,#f1f5f9 20px);border-radius:3px"></div>
+                        <p class="text-xs text-center mt-1 text-gray-600">Geometric</p>
+                    </div>
+                    <div class="p-1 border rounded cursor-pointer hover:border-blue-400" onclick="loadPattern('moroccan')" title="Moroccan">
+                        <div style="height:40px;background:linear-gradient(135deg,#1a5276 25%,#117a65 50%,#1a5276 75%);border-radius:3px"></div>
+                        <p class="text-xs text-center mt-1 text-gray-600">Moroccan</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHASE 18: Export Studio -->
+            <div class="tool-section">
+                <h3>18. Export Studio (Phase 18)</h3>
+                <div class="btn-row">
+                    <button class="btn-studio" onclick="exportAs('png')">PNG</button>
+                    <button class="btn-studio" onclick="exportAs('jpeg')">JPG</button>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-studio secondary" onclick="exportAs('pdf')">📄 PDF Sheet</button>
+                    <button class="btn-studio secondary" onclick="exportAs('svg')">SVG</button>
+                </div>
+                <div class="range-group mt-2">
+                    <label><span>JPEG Quality</span> <span id="valQuality">92%</span></label>
+                    <input type="range" id="sliderQuality" min="60" max="100" value="92" oninput="document.getElementById('valQuality').innerText=this.value+'%'">
+                </div>
+                <label class="flex items-center gap-2 text-xs text-gray-600 cursor-pointer mb-2">
+                    <input type="checkbox" id="chkTransparent"> Transparent background (PNG)
+                </label>
             </div>
         </div>
 
@@ -341,6 +435,20 @@
                 <span class="bg-white px-3 py-1 rounded shadow text-sm font-medium text-gray-600" id="sizeIndicator">Canvas: 800 × 600</span>
             </div>
             <canvas id="studioCanvas"></canvas>
+
+            <!-- Before/After Overlay (hidden by default) -->
+            <div id="beforeAfterContainer" class="hidden absolute inset-0 flex items-center justify-center bg-gray-800">
+                <div class="relative overflow-hidden rounded shadow-lg" style="width:800px;max-width:90vw;height:500px;">
+                    <img id="imgBefore" src="" class="absolute inset-0 w-full h-full object-contain" style="z-index:1">
+                    <div id="afterPane" class="absolute inset-0 overflow-hidden" style="z-index:2;width:50%;">
+                        <img id="imgAfter" src="" class="absolute inset-0 w-full h-full object-contain">
+                    </div>
+                    <div id="sliderHandle" class="absolute top-0 bottom-0 w-1 bg-white cursor-ew-resize" style="left:50%;z-index:3;">
+                        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full shadow flex items-center justify-center text-gray-700 font-bold text-xs select-none">↔</div>
+                    </div>
+                    <button onclick="closeBeforeAfter()" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-7 h-7 text-sm font-bold" style="z-index:10">✕</button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -1008,19 +1116,175 @@
     }
 
     // Export — high-res at chosen DPI (multiplier = DPI / 96 screen DPI)
-    function downloadDesign() {
-        if (is3D) toggle3DFloor(); // disable 3D perspective before capturing
+    // =============================================
+    // PHASE 18: EXPORT STUDIO
+    // =============================================
+    function exportAs(format) {
+        if (is3D) toggle3DFloor();
+        const multiplier  = currentDPI / 96;
+        const quality     = parseInt(document.getElementById('sliderQuality').value) / 100;
+        const transparent = document.getElementById('chkTransparent').checked;
 
-        const multiplier = currentDPI / 96;
-        const dataURL = canvas.toDataURL({
-            format: 'png',
-            quality: 1,
-            multiplier: multiplier
-        });
+        if (format === 'pdf') {
+            const { jsPDF } = window.jspdf;
+            const dataURL = canvas.toDataURL({ format: 'jpeg', quality: 0.92, multiplier });
+            const pdf = new jsPDF({ orientation: 'landscape', unit: 'px',
+                format: [canvas.width * multiplier, canvas.height * multiplier] });
+            pdf.addImage(dataURL, 'JPEG', 0, 0, canvas.width * multiplier, canvas.height * multiplier);
+            pdf.save(`mahashankh_studio_${currentDPI}dpi.pdf`);
+            return;
+        }
+        if (format === 'svg') {
+            const svg  = canvas.toSVG();
+            const blob = new Blob([svg], { type: 'image/svg+xml' });
+            const link = document.createElement('a');
+            link.download = 'mahashankh_studio.svg';
+            link.href = URL.createObjectURL(blob);
+            link.click();
+            return;
+        }
+        const origBg = canvas.backgroundColor;
+        if (transparent && format === 'png') canvas.backgroundColor = '';
+        const dataURL = canvas.toDataURL({ format, quality, multiplier });
+        canvas.backgroundColor = origBg;
+        canvas.renderAll();
         const link = document.createElement('a');
-        link.download = `mahashankh_studio_${currentDPI}dpi.png`;
+        link.download = `mahashankh_studio_${currentDPI}dpi.${format === 'jpeg' ? 'jpg' : format}`;
         link.href = dataURL;
         link.click();
+    }
+    function downloadDesign() { exportAs('png'); }
+
+    // =============================================
+    // PHASE 9: SEAMLESS TILE TOOL
+    // =============================================
+    function makeSeamless() {
+        const obj = canvas.getActiveObject();
+        if (!obj || obj.type !== 'image') return alert('Select an image first.');
+        obj.cloneAsImage(function(baked) {
+            const tmp  = document.createElement('canvas');
+            tmp.width  = baked.width;
+            tmp.height = baked.height;
+            const tCtx = tmp.getContext('2d');
+            tCtx.drawImage(baked._element, 0, 0);
+            tCtx.save(); tCtx.globalAlpha = 0.5; tCtx.scale(-1, 1);
+            tCtx.drawImage(baked._element, -baked.width, 0); tCtx.restore();
+            tCtx.save(); tCtx.globalAlpha = 0.5; tCtx.scale(1, -1);
+            tCtx.drawImage(baked._element, 0, -baked.height); tCtx.restore();
+            fabric.Image.fromURL(tmp.toDataURL(), function(seamImg) {
+                seamImg.set({ left: obj.left, top: obj.top, originX: 'center', originY: 'center',
+                    scaleX: obj.getScaledWidth() / seamImg.width,
+                    scaleY: obj.getScaledHeight() / seamImg.height, angle: obj.angle });
+                canvas.remove(obj); canvas.add(seamImg);
+                canvas.setActiveObject(seamImg); canvas.renderAll();
+            });
+        });
+    }
+
+    // =============================================
+    // PHASE 16: BEFORE & AFTER SLIDER
+    // =============================================
+    let _originalSnapshot = null;
+    function captureOriginal() {
+        _originalSnapshot = canvas.toDataURL({ format: 'png', multiplier: 1 });
+        alert('✅ Original state captured! Now apply edits, then click "Before / After Slider".');
+    }
+    function showBeforeAfter() {
+        if (!_originalSnapshot) return alert('First click "Capture Original State" before editing.');
+        document.getElementById('imgBefore').src = _originalSnapshot;
+        document.getElementById('imgAfter').src  = canvas.toDataURL({ format: 'png', multiplier: 1 });
+        document.getElementById('beforeAfterContainer').classList.remove('hidden');
+    }
+    function closeBeforeAfter() {
+        document.getElementById('beforeAfterContainer').classList.add('hidden');
+    }
+    (function() {
+        let dragging = false;
+        const handle = document.getElementById('sliderHandle');
+        const afterPane = document.getElementById('afterPane');
+        handle.addEventListener('mousedown', () => dragging = true);
+        document.addEventListener('mouseup',  () => dragging = false);
+        document.addEventListener('mousemove', (e) => {
+            if (!dragging) return;
+            const rect = handle.parentElement.getBoundingClientRect();
+            let x = Math.max(2, Math.min(98, ((e.clientX - rect.left) / rect.width) * 100));
+            handle.style.left = x + '%'; afterPane.style.width = x + '%';
+        });
+        handle.addEventListener('touchstart', () => dragging = true, { passive: true });
+        document.addEventListener('touchend', () => dragging = false);
+        document.addEventListener('touchmove', (e) => {
+            if (!dragging) return;
+            const t = e.touches[0];
+            const rect = handle.parentElement.getBoundingClientRect();
+            let x = Math.max(2, Math.min(98, ((t.clientX - rect.left) / rect.width) * 100));
+            handle.style.left = x + '%'; afterPane.style.width = x + '%';
+        }, { passive: true });
+    })();
+
+    // =============================================
+    // PHASE 21: BRAND & WATERMARK
+    // =============================================
+    function addWatermark() {
+        const text    = document.getElementById('watermarkText').value || 'MAHASHANKH';
+        const pos     = document.getElementById('watermarkPos').value;
+        const color   = document.getElementById('watermarkColor').value;
+        const opacity = parseInt(document.getElementById('sliderWmOpacity').value) / 100;
+        const posMap  = {
+            br: { left: canvas.width-20,  top: canvas.height-20, originX:'right',  originY:'bottom' },
+            bl: { left: 20,               top: canvas.height-20, originX:'left',   originY:'bottom' },
+            tr: { left: canvas.width-20,  top: 20,               originX:'right',  originY:'top'    },
+            tl: { left: 20,               top: 20,               originX:'left',   originY:'top'    },
+            center:{ left: canvas.width/2,top: canvas.height/2,  originX:'center', originY:'center' },
+        };
+        const wm = new fabric.Text(text, { ...posMap[pos], fontSize:22, fontWeight:'bold',
+            fontFamily:'Arial', fill:color, opacity,
+            shadow: new fabric.Shadow({ color:'rgba(0,0,0,0.4)', blur:4, offsetX:1, offsetY:1 }) });
+        canvas.add(wm); canvas.setActiveObject(wm); canvas.renderAll();
+    }
+    function addLogoWatermark() {
+        const input = document.createElement('input'); input.type='file'; input.accept='image/*';
+        input.onchange = function(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                fabric.Image.fromURL(ev.target.result, function(logo) {
+                    const opacity = parseInt(document.getElementById('sliderWmOpacity').value) / 100;
+                    logo.scaleToWidth(100);
+                    logo.set({ left: canvas.width-120, top: canvas.height-80, opacity });
+                    canvas.add(logo); canvas.setActiveObject(logo); canvas.renderAll();
+                });
+            };
+            reader.readAsDataURL(file);
+        };
+        input.click();
+    }
+
+    // =============================================
+    // PHASE 26: PATTERN LIBRARY
+    // =============================================
+    const patternPresets = {
+        marble:    { bg:'#f0ede6', s:-0.3, b:0.05,  c:0.1  },
+        wood:      { bg:'#c8a265', s: 0.2, b:-0.1,  c:0.15 },
+        concrete:  { bg:'#9e9e9e', s:-0.6, b:-0.05, c:0.1  },
+        terrazzo:  { bg:'#e8e8d0', s: 0.1, b:0.05,  c:0.05 },
+        geometric: { bg:'#334155', s:-0.2, b: 0.0,  c:0.2  },
+        moroccan:  { bg:'#1a5276', s: 0.4, b:-0.05, c:0.2  },
+    };
+    function loadPattern(name) {
+        const preset = patternPresets[name]; if (!preset) return;
+        canvas.backgroundColor = preset.bg;
+        const obj = canvas.getActiveObject();
+        if (obj && obj.type === 'image') {
+            obj.filters[0] = new fabric.Image.filters.Brightness({ brightness: preset.b });
+            obj.filters[1] = new fabric.Image.filters.Contrast({ contrast: preset.c });
+            obj.filters[2] = new fabric.Image.filters.Saturation({ saturation: preset.s });
+            obj.applyFilters(); updateColorUI(obj);
+        }
+        canvas.renderAll();
+        document.querySelectorAll('#patternLibrary > div').forEach(el => {
+            el.classList.remove('border-blue-500','border-2');
+        });
+        event.currentTarget.classList.add('border-blue-500','border-2');
     }
 </script>
 
