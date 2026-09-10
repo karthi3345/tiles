@@ -183,9 +183,37 @@
                 <button class="btn-studio secondary" onclick="applyPhysicalDimensions()">Apply Dimensions</button>
             </div>
 
+            <!-- PHASE 4: Rotation & Angle Tools -->
             <div class="tool-section">
-                <h3>4. Color & Filters</h3>
-                <p class="text-xs text-gray-500 mb-2">Select an image to apply filters.</p>
+                <h3>4. Rotation & Angle (Phase 4)</h3>
+                <p class="text-xs text-gray-500 mb-2">Select an object to rotate or angle-snap.</p>
+                <div class="btn-row">
+                    <button class="btn-studio secondary" onclick="rotateSelected(-90)">↺ -90°</button>
+                    <button class="btn-studio secondary" onclick="rotateSelected(90)">↻ +90°</button>
+                    <button class="btn-studio secondary" onclick="rotateSelected(180)">180°</button>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-studio secondary" onclick="rotateSelected(45)">+45°</button>
+                    <button class="btn-studio secondary" onclick="rotateSelected(-45)">-45°</button>
+                    <button class="btn-studio secondary" onclick="rotateToAngle(0)">Reset 0°</button>
+                </div>
+                <div class="range-group mt-1">
+                    <label><span>Free Rotation</span> <span id="valFreeAngle">0°</span></label>
+                    <input type="range" id="sliderAngle" min="0" max="360" step="1" value="0" oninput="freeRotate(this.value)">
+                </div>
+                <div class="flex gap-2 items-center mb-2">
+                    <input type="number" id="inputAngle" class="w-full border rounded p-1 text-sm" placeholder="Custom angle°" min="0" max="360">
+                    <button class="btn-studio secondary flex-shrink-0" style="width:auto;padding:8px;" onclick="applyCustomAngle()">Apply</button>
+                </div>
+                <label class="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+                    <input type="checkbox" id="chkSnapAngle"> Snap to 45° increments
+                </label>
+            </div>
+
+            <!-- PHASE 5: Full Color Studio -->
+            <div class="tool-section">
+                <h3>5. Color Studio (Phase 5)</h3>
+                <p class="text-xs text-gray-500 mb-2">Select an image to apply color adjustments.</p>
                 <div class="range-group">
                     <label><span>Brightness</span> <span id="valBrightness">0</span></label>
                     <input type="range" id="sliderBrightness" min="-1" max="1" step="0.05" value="0">
@@ -199,10 +227,55 @@
                     <input type="range" id="sliderSaturation" min="-1" max="1" step="0.05" value="0">
                 </div>
                 <div class="range-group">
-                    <label><span>Hue</span> <span id="valHue">0</span></label>
+                    <label><span>Hue Rotate</span> <span id="valHue">0</span></label>
                     <input type="range" id="sliderHue" min="-2" max="2" step="0.1" value="0">
                 </div>
-                <button class="btn-studio secondary" onclick="applyGrayscale()">Toggle Grayscale</button>
+                <div class="range-group">
+                    <label><span>Noise Reduction (Blur)</span> <span id="valBlur">0</span></label>
+                    <input type="range" id="sliderBlur" min="0" max="20" step="0.5" value="0">
+                </div>
+                <div class="range-group">
+                    <label><span>Sharpen</span> <span id="valSharpen">0</span></label>
+                    <input type="range" id="sliderSharpen" min="0" max="1" step="0.05" value="0">
+                </div>
+                <div class="range-group">
+                    <label><span>Gamma (Exposure)</span> <span id="valGamma">1</span></label>
+                    <input type="range" id="sliderGamma" min="0.2" max="3" step="0.05" value="1">
+                </div>
+                <div class="flex gap-2 mb-2">
+                    <button class="btn-studio secondary" onclick="toggleFilter('grayscale')">B&W</button>
+                    <button class="btn-studio secondary" onclick="toggleFilter('sepia')">Sepia</button>
+                    <button class="btn-studio secondary" onclick="toggleFilter('invert')">Invert</button>
+                </div>
+                <div class="flex gap-2">
+                    <label class="text-xs text-gray-500 mt-1">Tint</label>
+                    <input type="color" id="colorTint" value="#ffffff" class="h-7 border-0 cursor-pointer flex-1">
+                    <input type="range" id="sliderTintAlpha" min="0" max="1" step="0.05" value="0" class="flex-1" title="Tint Strength">
+                </div>
+                <button class="btn-studio danger mt-2" onclick="resetFilters()">Reset All Filters</button>
+            </div>
+
+            <!-- PHASE 6: Effects Studio -->
+            <div class="tool-section">
+                <h3>6. Effects Studio (Phase 6)</h3>
+                <p class="text-xs text-gray-500 mb-2">One-click surface effects.</p>
+                <div class="btn-row">
+                    <button class="btn-studio secondary" onclick="applyEffect('gloss')">✨ Gloss</button>
+                    <button class="btn-studio secondary" onclick="applyEffect('matte')">🪵 Matte</button>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-studio secondary" onclick="applyEffect('metallic')">🔩 Metallic</button>
+                    <button class="btn-studio secondary" onclick="applyEffect('emboss')">🏔 Emboss</button>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-studio secondary" onclick="applyEffect('vintage')">📷 Vintage</button>
+                    <button class="btn-studio secondary" onclick="applyEffect('warm')">🌅 Warm</button>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-studio secondary" onclick="applyEffect('cool')">❄️ Cool</button>
+                    <button class="btn-studio secondary" onclick="applyEffect('vivid')">🎨 Vivid</button>
+                </div>
+                <button class="btn-studio danger mt-2" onclick="resetFilters()">Remove Effects</button>
             </div>
 
             <div class="tool-section">
@@ -549,94 +622,236 @@
         }
     }
 
-    // Color & Filters (Requires Fabric.js WebGL/Canvas filtering)
-    function applyFilter(index, filter) {
+    // =============================================
+    // PHASE 4: ROTATION & ANGLE TOOLS
+    // =============================================
+    function rotateSelected(deg) {
         const obj = canvas.getActiveObject();
-        if (!obj || obj.type !== 'image') return;
-        obj.filters[index] = filter;
-        obj.applyFilters();
+        if (!obj) return;
+        const snap = document.getElementById('chkSnapAngle').checked;
+        let newAngle = (obj.angle + deg) % 360;
+        if (snap) newAngle = Math.round(newAngle / 45) * 45;
+        obj.rotate(newAngle);
+        canvas.renderAll();
+        document.getElementById('sliderAngle').value = (newAngle + 360) % 360;
+        document.getElementById('valFreeAngle').innerText = Math.round((newAngle + 360) % 360) + '°';
+    }
+
+    function rotateToAngle(deg) {
+        const obj = canvas.getActiveObject();
+        if (!obj) return;
+        obj.rotate(deg);
+        canvas.renderAll();
+        document.getElementById('sliderAngle').value = deg;
+        document.getElementById('valFreeAngle').innerText = deg + '°';
+    }
+
+    function freeRotate(val) {
+        const obj = canvas.getActiveObject();
+        if (!obj) return;
+        const snap = document.getElementById('chkSnapAngle').checked;
+        let angle = parseInt(val);
+        if (snap) angle = Math.round(angle / 45) * 45;
+        obj.rotate(angle);
+        canvas.renderAll();
+        document.getElementById('valFreeAngle').innerText = angle + '°';
+        document.getElementById('sliderAngle').value = angle;
+    }
+
+    function applyCustomAngle() {
+        const val = parseFloat(document.getElementById('inputAngle').value);
+        if (isNaN(val)) return;
+        rotateToAngle(val % 360);
+    }
+
+    // Sync rotation slider when object is selected
+    canvas.on('selection:created', syncRotationUI);
+    canvas.on('selection:updated', syncRotationUI);
+    canvas.on('object:rotating', function(e) {
+        const angle = Math.round((e.target.angle + 360) % 360);
+        document.getElementById('sliderAngle').value = angle;
+        document.getElementById('valFreeAngle').innerText = angle + '°';
+    });
+
+    function syncRotationUI() {
+        const obj = canvas.getActiveObject();
+        if (!obj) return;
+        const angle = Math.round((obj.angle + 360) % 360);
+        document.getElementById('sliderAngle').value = angle;
+        document.getElementById('valFreeAngle').innerText = angle + '°';
+        document.getElementById('inputAngle').value = angle;
+    }
+
+    // =============================================
+    // PHASE 5 & 6: COLOR STUDIO + EFFECTS ENGINE
+    // =============================================
+    // Filter slot assignments:
+    // 0 = Brightness, 1 = Contrast, 2 = Saturation, 3 = HueRotation
+    // 4 = Blur, 5 = Sharpen (Convolve), 6 = Gamma
+    // 10 = Grayscale, 11 = Sepia, 12 = Invert
+    // 13 = BlendColor (Tint), 14 = Effect Preset
+
+    function getImg() {
+        const obj = canvas.getActiveObject();
+        return (obj && obj.type === 'image') ? obj : null;
+    }
+
+    function setFilter(slot, filter) {
+        const img = getImg(); if (!img) return;
+        img.filters[slot] = filter;
+        img.applyFilters();
         canvas.renderAll();
     }
 
-    function applyFilterValue(index, prop, value) {
-        const obj = canvas.getActiveObject();
-        if (!obj || obj.type !== 'image') return;
-        if (obj.filters[index]) {
-            obj.filters[index][prop] = value;
-            obj.applyFilters();
-            canvas.renderAll();
-        }
+    // Brightness
+    document.getElementById('sliderBrightness').addEventListener('input', function() {
+        const v = parseFloat(this.value);
+        document.getElementById('valBrightness').innerText = v.toFixed(2);
+        setFilter(0, new fabric.Image.filters.Brightness({ brightness: v }));
+    });
+
+    // Contrast
+    document.getElementById('sliderContrast').addEventListener('input', function() {
+        const v = parseFloat(this.value);
+        document.getElementById('valContrast').innerText = v.toFixed(2);
+        setFilter(1, new fabric.Image.filters.Contrast({ contrast: v }));
+    });
+
+    // Saturation
+    document.getElementById('sliderSaturation').addEventListener('input', function() {
+        const v = parseFloat(this.value);
+        document.getElementById('valSaturation').innerText = v.toFixed(2);
+        setFilter(2, new fabric.Image.filters.Saturation({ saturation: v }));
+    });
+
+    // Hue
+    document.getElementById('sliderHue').addEventListener('input', function() {
+        const v = parseFloat(this.value);
+        document.getElementById('valHue').innerText = v.toFixed(2);
+        setFilter(3, new fabric.Image.filters.HueRotation({ rotation: v }));
+    });
+
+    // Blur (Noise Reduction)
+    document.getElementById('sliderBlur').addEventListener('input', function() {
+        const v = parseFloat(this.value);
+        document.getElementById('valBlur').innerText = v.toFixed(1);
+        setFilter(4, new fabric.Image.filters.Blur({ blur: v / 20 }));
+    });
+
+    // Sharpen
+    document.getElementById('sliderSharpen').addEventListener('input', function() {
+        const v = parseFloat(this.value);
+        document.getElementById('valSharpen').innerText = v.toFixed(2);
+        const matrix = [
+             0, -v,  0,
+            -v, 1 + 4 * v, -v,
+             0, -v,  0
+        ];
+        setFilter(5, new fabric.Image.filters.Convolute({ matrix }));
+    });
+
+    // Gamma (Exposure)
+    document.getElementById('sliderGamma').addEventListener('input', function() {
+        const v = parseFloat(this.value);
+        document.getElementById('valGamma').innerText = v.toFixed(2);
+        setFilter(6, new fabric.Image.filters.Gamma({ gamma: [v, v, v] }));
+    });
+
+    // Tint Color
+    document.getElementById('colorTint').addEventListener('input', applyTint);
+    document.getElementById('sliderTintAlpha').addEventListener('input', function() {
+        applyTint();
+    });
+
+    function applyTint() {
+        const color = document.getElementById('colorTint').value;
+        const alpha = parseFloat(document.getElementById('sliderTintAlpha').value);
+        setFilter(13, new fabric.Image.filters.BlendColor({ color, mode: 'tint', alpha }));
     }
 
-    document.getElementById('sliderBrightness').addEventListener('input', function(e) {
-        const val = parseFloat(e.target.value);
-        document.getElementById('valBrightness').innerText = val.toFixed(2);
-        const obj = canvas.getActiveObject();
-        if (obj && obj.type === 'image') {
-            if(!obj.filters[0]) obj.filters[0] = new fabric.Image.filters.Brightness({ brightness: 0 });
-            applyFilterValue(0, 'brightness', val);
-        }
-    });
-
-    document.getElementById('sliderContrast').addEventListener('input', function(e) {
-        const val = parseFloat(e.target.value);
-        document.getElementById('valContrast').innerText = val.toFixed(2);
-        const obj = canvas.getActiveObject();
-        if (obj && obj.type === 'image') {
-            if(!obj.filters[1]) obj.filters[1] = new fabric.Image.filters.Contrast({ contrast: 0 });
-            applyFilterValue(1, 'contrast', val);
-        }
-    });
-
-    document.getElementById('sliderSaturation').addEventListener('input', function(e) {
-        const val = parseFloat(e.target.value);
-        document.getElementById('valSaturation').innerText = val.toFixed(2);
-        const obj = canvas.getActiveObject();
-        if (obj && obj.type === 'image') {
-            if(!obj.filters[2]) obj.filters[2] = new fabric.Image.filters.Saturation({ saturation: 0 });
-            applyFilterValue(2, 'saturation', val);
-        }
-    });
-
-    document.getElementById('sliderHue').addEventListener('input', function(e) {
-        const val = parseFloat(e.target.value);
-        document.getElementById('valHue').innerText = val.toFixed(2);
-        const obj = canvas.getActiveObject();
-        if (obj && obj.type === 'image') {
-            if(!obj.filters[3]) obj.filters[3] = new fabric.Image.filters.HueRotation({ rotation: 0 });
-            applyFilterValue(3, 'rotation', val);
-        }
-    });
-
-    function applyGrayscale() {
-        const obj = canvas.getActiveObject();
-        if (!obj || obj.type !== 'image') return;
-        if (obj.filters[4]) {
-            obj.filters[4] = null; // remove
+    // Toggle one-shot filters (grayscale, sepia, invert)
+    function toggleFilter(type) {
+        const img = getImg(); if (!img) return;
+        const slots = { grayscale: 10, sepia: 11, invert: 12 };
+        const slot = slots[type];
+        if (img.filters[slot]) {
+            img.filters[slot] = null;
         } else {
-            obj.filters[4] = new fabric.Image.filters.Grayscale();
+            if (type === 'grayscale') img.filters[slot] = new fabric.Image.filters.Grayscale();
+            if (type === 'sepia')     img.filters[slot] = new fabric.Image.filters.Sepia();
+            if (type === 'invert')    img.filters[slot] = new fabric.Image.filters.Invert();
         }
-        obj.applyFilters();
+        img.applyFilters();
         canvas.renderAll();
     }
 
-    // Update sliders when selecting an object
-    canvas.on('selection:created', updateFilterUI);
-    canvas.on('selection:updated', updateFilterUI);
-    
-    function updateFilterUI() {
-        const obj = canvas.getActiveObject();
-        if (obj && obj.type === 'image') {
-            document.getElementById('sliderBrightness').value = obj.filters[0] ? obj.filters[0].brightness : 0;
-            document.getElementById('sliderContrast').value = obj.filters[1] ? obj.filters[1].contrast : 0;
-            document.getElementById('sliderSaturation').value = obj.filters[2] ? obj.filters[2].saturation : 0;
-            document.getElementById('sliderHue').value = obj.filters[3] ? obj.filters[3].rotation : 0;
-            
-            document.getElementById('valBrightness').innerText = document.getElementById('sliderBrightness').value;
-            document.getElementById('valContrast').innerText = document.getElementById('sliderContrast').value;
-            document.getElementById('valSaturation').innerText = document.getElementById('sliderSaturation').value;
-            document.getElementById('valHue').innerText = document.getElementById('sliderHue').value;
-        }
+    // PHASE 6: Preset Effects
+    function applyEffect(type) {
+        const img = getImg(); if (!img) return alert('Select an image first.');
+        // First clear effect slot 14
+        img.filters[14] = null;
+
+        const presets = {
+            gloss:    () => { img.filters[0] = new fabric.Image.filters.Brightness({ brightness: 0.12 });
+                              img.filters[1] = new fabric.Image.filters.Contrast({ contrast: 0.18 });
+                              img.filters[2] = new fabric.Image.filters.Saturation({ saturation: 0.15 }); },
+            matte:    () => { img.filters[0] = new fabric.Image.filters.Brightness({ brightness: -0.05 });
+                              img.filters[1] = new fabric.Image.filters.Contrast({ contrast: -0.10 });
+                              img.filters[2] = new fabric.Image.filters.Saturation({ saturation: -0.2 }); },
+            metallic: () => { img.filters[0] = new fabric.Image.filters.Brightness({ brightness: 0.1 });
+                              img.filters[1] = new fabric.Image.filters.Contrast({ contrast: 0.3 });
+                              img.filters[2] = new fabric.Image.filters.Saturation({ saturation: -0.4 }); },
+            emboss:   () => { img.filters[5] = new fabric.Image.filters.Convolute({
+                                matrix: [-2,-1,0,-1,1,1,0,1,2] }); },
+            vintage:  () => { img.filters[11] = new fabric.Image.filters.Sepia();
+                              img.filters[0]  = new fabric.Image.filters.Brightness({ brightness: -0.1 });
+                              img.filters[1]  = new fabric.Image.filters.Contrast({ contrast: 0.1 }); },
+            warm:     () => { img.filters[13] = new fabric.Image.filters.BlendColor({ color: '#ff9900', mode: 'tint', alpha: 0.15 }); },
+            cool:     () => { img.filters[13] = new fabric.Image.filters.BlendColor({ color: '#0099ff', mode: 'tint', alpha: 0.15 }); },
+            vivid:    () => { img.filters[0] = new fabric.Image.filters.Brightness({ brightness: 0.05 });
+                              img.filters[2] = new fabric.Image.filters.Saturation({ saturation: 0.6 });
+                              img.filters[1] = new fabric.Image.filters.Contrast({ contrast: 0.2 }); },
+        };
+
+        if (presets[type]) presets[type]();
+        img.applyFilters();
+        canvas.renderAll();
+        updateColorUI(img);
+    }
+
+    // Reset all filters
+    function resetFilters() {
+        const img = getImg(); if (!img) return;
+        img.filters = [];
+        img.applyFilters();
+        canvas.renderAll();
+        // Reset all sliders
+        ['sliderBrightness','sliderContrast','sliderSaturation','sliderHue','sliderBlur','sliderSharpen'].forEach(id => {
+            document.getElementById(id).value = 0;
+        });
+        document.getElementById('sliderGamma').value = 1;
+        document.getElementById('sliderTintAlpha').value = 0;
+        ['valBrightness','valContrast','valSaturation','valHue','valBlur','valSharpen'].forEach(id => {
+            document.getElementById(id).innerText = '0';
+        });
+        document.getElementById('valGamma').innerText = '1';
+    }
+
+    // Sync sliders when object selected
+    function updateFilterUI() { updateColorUI(getImg()); }
+
+    function updateColorUI(img) {
+        if (!img) return;
+        const get = (slot, prop, def) => img.filters[slot] ? img.filters[slot][prop] || def : def;
+        const setSlider = (id, val, valId) => {
+            document.getElementById(id).value = val;
+            if (valId) document.getElementById(valId).innerText = parseFloat(val).toFixed(2);
+        };
+        setSlider('sliderBrightness', get(0,'brightness',0), 'valBrightness');
+        setSlider('sliderContrast',   get(1,'contrast',0),   'valContrast');
+        setSlider('sliderSaturation', get(2,'saturation',0), 'valSaturation');
+        setSlider('sliderHue',        get(3,'rotation',0),   'valHue');
+        setSlider('sliderGamma',      (img.filters[6] ? img.filters[6].gamma[0] : 1), 'valGamma');
     }
 
     // Pattern & Layout Generation
