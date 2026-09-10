@@ -1184,3 +1184,7 @@ def update_order_status(request, order_id):
         related_url='/orders/',
     )
     return redirect('tiles:order_history')
+
+def studio_view(request):
+    return render(request, 'tiles/studio.html')
+

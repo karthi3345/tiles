@@ -23,6 +23,7 @@ urlpatterns = [
     path('tiles/<slug:slug>/', views.tile_detail, name='tile_detail'),  # catch-all: keep this LAST among tiles/ routes
 
     # AI tools
+    path('studio/', views.studio_view, name='studio'),
     path('chat/', views.chat_view, name='chat'),
     path('generate-image/', views.generate_image_view, name='generate_image'),
 

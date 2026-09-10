@@ -1,0 +1,518 @@
+{% extends 'tiles/base.html' %}
+{% block content %}
+
+<style>
+    .studio-container {
+        display: flex;
+        height: 85vh;
+        background: #f8fafc;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+    }
+    .studio-sidebar {
+        width: 320px;
+        background: #ffffff;
+        border-right: 1px solid #e2e8f0;
+        padding: 20px;
+        overflow-y: auto;
+    }
+    .studio-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #e2e8f0;
+        overflow: auto;
+        position: relative;
+    }
+    .studio-toolbar {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        display: flex;
+        gap: 10px;
+    }
+    canvas {
+        background: #ffffff;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        max-width: 90%;
+        max-height: 90%;
+        object-fit: contain;
+    }
+    .tool-section {
+        margin-bottom: 24px;
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 16px;
+    }
+    .tool-section h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .btn-studio {
+        display: inline-block;
+        width: 100%;
+        padding: 8px 12px;
+        background: #3b82f6;
+        color: white;
+        border-radius: 6px;
+        text-align: center;
+        cursor: pointer;
+        font-weight: 500;
+        margin-bottom: 8px;
+        transition: 0.2s;
+        border: none;
+    }
+    .btn-studio:hover {
+        background: #2563eb;
+    }
+    .btn-studio.secondary {
+        background: #f1f5f9;
+        color: #475569;
+    }
+    .btn-studio.secondary:hover {
+        background: #e2e8f0;
+    }
+    .btn-row {
+        display: flex;
+        gap: 8px;
+    }
+    .btn-row .btn-studio {
+        flex: 1;
+    }
+    .range-group {
+        margin-bottom: 12px;
+    }
+    .range-group label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        color: #475569;
+        margin-bottom: 4px;
+    }
+    input[type=range] {
+        width: 100%;
+    }
+</style>
+
+<div class="container mx-auto mt-6 mb-12">
+    <div class="mb-4 flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-800">🧱 MAHASHANKH TILES STUDIO</h1>
+        <p class="text-gray-500">Professional Tile Design, Editing & Visualization</p>
+    </div>
+
+    <div class="studio-container">
+        <!-- Sidebar Tools -->
+        <div class="studio-sidebar">
+            <div class="tool-section">
+                <h3>1. Upload & Setup</h3>
+                <label class="btn-studio">
+                    Upload Tile Image
+                    <input type="file" id="imageUpload" accept="image/png, image/jpeg, image/webp" class="hidden">
+                </label>
+                <button class="btn-studio secondary" id="btnReset">Reset to Original</button>
+            </div>
+
+            <div class="tool-section">
+                <h3>2. Crop, Rotate & Flip</h3>
+                <div class="btn-row mb-2">
+                    <button class="btn-studio secondary" id="btnToggleCrop" onclick="toggleCropMode()">✂ Crop Mode</button>
+                    <button class="btn-studio bg-green-500 text-white hidden" id="btnApplyCrop" onclick="applyCrop()">✔ Apply Crop</button>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-studio secondary" onclick="rotate(-90)">↺ -90°</button>
+                    <button class="btn-studio secondary" onclick="rotate(90)">↻ 90°</button>
+                </div>
+                <div class="btn-row">
+                    <button class="btn-studio secondary" onclick="flip('H')">Flip H</button>
+                    <button class="btn-studio secondary" onclick="flip('V')">Flip V</button>
+                </div>
+            </div>
+
+            <div class="tool-section">
+                <h3>3. Color & Filters</h3>
+                <div class="range-group">
+                    <label><span>Brightness</span> <span id="valBrightness">100%</span></label>
+                    <input type="range" id="sliderBrightness" min="0" max="200" value="100">
+                </div>
+                <div class="range-group">
+                    <label><span>Contrast</span> <span id="valContrast">100%</span></label>
+                    <input type="range" id="sliderContrast" min="0" max="200" value="100">
+                </div>
+                <div class="range-group">
+                    <label><span>Saturation</span> <span id="valSaturation">100%</span></label>
+                    <input type="range" id="sliderSaturation" min="0" max="200" value="100">
+                </div>
+                <div class="range-group">
+                    <label><span>Hue</span> <span id="valHue">0°</span></label>
+                    <input type="range" id="sliderHue" min="0" max="360" value="0">
+                </div>
+                <button class="btn-studio secondary" onclick="applyEffect('grayscale')">B&W / Grayscale</button>
+            </div>
+
+            <div class="tool-section">
+                <h3>4. Pattern & Repeat</h3>
+                <div class="btn-row">
+                    <button class="btn-studio secondary" onclick="generatePattern(1, 1)">1×1</button>
+                    <button class="btn-studio secondary" onclick="generatePattern(2, 2)">2×2</button>
+                    <button class="btn-studio secondary" onclick="generatePattern(3, 3)">3×3</button>
+                </div>
+                <div class="range-group mt-2">
+                    <label><span>Grout / Gap Size</span> <span id="valGrout">0px</span></label>
+                    <input type="range" id="sliderGrout" min="0" max="20" value="0">
+                </div>
+                <button class="btn-studio secondary mt-2" onclick="toggle3DFloor()">Toggle 3D Floor View</button>
+            </div>
+
+            <div class="tool-section">
+                <h3>5. Coverage Calculator</h3>
+                <div class="range-group">
+                    <label><span>Tile Size (mm)</span></label>
+                    <div class="flex gap-2">
+                        <input type="number" id="calcTileW" class="w-full border rounded p-1 text-sm" placeholder="W" value="600">
+                        <input type="number" id="calcTileH" class="w-full border rounded p-1 text-sm" placeholder="H" value="1200">
+                    </div>
+                </div>
+                <div class="range-group">
+                    <label><span>Area (Sq. Ft)</span></label>
+                    <input type="number" id="calcArea" class="w-full border rounded p-1 text-sm" placeholder="e.g. 150" value="100">
+                </div>
+                <button class="btn-studio secondary" onclick="calculateTiles()">Calculate</button>
+                <div id="calcResult" class="mt-2 text-xs text-gray-600 hidden bg-gray-50 p-2 rounded">
+                    <!-- Results injected here -->
+                </div>
+            </div>
+            
+            <div class="tool-section">
+                <h3>6. Export</h3>
+                <button class="btn-studio" onclick="downloadDesign()">⬇ Download High-Res</button>
+            </div>
+        </div>
+
+        <!-- Main Canvas Area -->
+        <div class="studio-main">
+            <div class="studio-toolbar">
+                <span class="bg-white px-3 py-1 rounded shadow text-sm font-medium text-gray-600" id="sizeIndicator">Size: 0 × 0</span>
+            </div>
+            <canvas id="studioCanvas"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('studioCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    let originalImage = null;
+    
+    // State
+    let currentRotation = 0;
+    let flipH = 1;
+    let flipV = 1;
+    
+    // Filters
+    let brightness = 100;
+    let contrast = 100;
+    let saturation = 100;
+    let hue = 0;
+    let isGrayscale = false;
+    
+    // Pattern
+    let repeatCols = 1;
+    let repeatRows = 1;
+    let groutSize = 0;
+
+    document.getElementById('imageUpload').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                originalImage = img;
+                resetState();
+                renderCanvas();
+            }
+            img.src = event.target.result;
+        }
+        reader.readAsDataURL(file);
+    });
+
+    function resetState() {
+        currentRotation = 0; flipH = 1; flipV = 1;
+        brightness = 100; contrast = 100; saturation = 100; hue = 0;
+        isGrayscale = false; repeatCols = 1; repeatRows = 1;
+        
+        document.getElementById('sliderBrightness').value = 100;
+        document.getElementById('sliderContrast').value = 100;
+        document.getElementById('sliderSaturation').value = 100;
+        document.getElementById('sliderHue').value = 0;
+        
+        updateLabels();
+        renderCanvas();
+    }
+    
+    document.getElementById('btnReset').addEventListener('click', resetState);
+
+    function rotate(degrees) {
+        currentRotation = (currentRotation + degrees) % 360;
+        renderCanvas();
+    }
+
+    function flip(dir) {
+        if (dir === 'H') flipH *= -1;
+        if (dir === 'V') flipV *= -1;
+        renderCanvas();
+    }
+    
+    function applyEffect(effect) {
+        if (effect === 'grayscale') isGrayscale = !isGrayscale;
+        renderCanvas();
+    }
+    
+    function generatePattern(cols, rows) {
+        repeatCols = cols;
+        repeatRows = rows;
+        renderCanvas();
+    }
+    
+    // Range Sliders
+    const sliders = ['Brightness', 'Contrast', 'Saturation', 'Hue', 'Grout'];
+    sliders.forEach(s => {
+        document.getElementById(`slider${s}`).addEventListener('input', function(e) {
+            let val = e.target.value;
+            document.getElementById(`val${s}`).innerText = s === 'Hue' ? val + '°' : (s === 'Grout' ? val + 'px' : val + '%');
+            
+            if (s === 'Brightness') brightness = val;
+            if (s === 'Contrast') contrast = val;
+            if (s === 'Saturation') saturation = val;
+            if (s === 'Hue') hue = val;
+            if (s === 'Grout') groutSize = parseInt(val);
+            
+            renderCanvas();
+        });
+    });
+
+    function updateLabels() {
+        document.getElementById('valBrightness').innerText = brightness + '%';
+        document.getElementById('valContrast').innerText = contrast + '%';
+        document.getElementById('valSaturation').innerText = saturation + '%';
+        document.getElementById('valHue').innerText = hue + '°';
+    }
+
+    function renderCanvas() {
+        if (!originalImage) return;
+
+        // Base tile size (taking rotation into account)
+        const isRotated = Math.abs(currentRotation) === 90 || Math.abs(currentRotation) === 270;
+        const tileW = isRotated ? originalImage.height : originalImage.width;
+        const tileH = isRotated ? originalImage.width : originalImage.height;
+
+        // Canvas total size
+        canvas.width = (tileW * repeatCols) + (groutSize * (repeatCols - 1));
+        canvas.height = (tileH * repeatRows) + (groutSize * (repeatRows - 1));
+        
+        document.getElementById('sizeIndicator').innerText = `Size: ${canvas.width} × ${canvas.height} px`;
+
+        // Apply filters
+        let filterString = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) hue-rotate(${hue}deg)`;
+        if (isGrayscale) filterString += ' grayscale(100%)';
+        ctx.filter = filterString;
+        
+        // Fill grout background
+        if (groutSize > 0) {
+            ctx.fillStyle = '#cccccc'; // Default grout color
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        for (let c = 0; c < repeatCols; c++) {
+            for (let r = 0; r < repeatRows; r++) {
+                
+                const xOffset = c * (tileW + groutSize);
+                const yOffset = r * (tileH + groutSize);
+                
+                ctx.save();
+                
+                // Move to the center of the current tile slot
+                ctx.translate(xOffset + tileW/2, yOffset + tileH/2);
+                
+                // Apply rotation
+                ctx.rotate(currentRotation * Math.PI / 180);
+                
+                // Apply flip
+                ctx.scale(flipH, flipV);
+                
+                // Draw image centered
+                ctx.drawImage(originalImage, -originalImage.width/2, -originalImage.height/2);
+                
+                ctx.restore();
+            }
+        }
+
+        // Draw Crop Overlay
+        if (isCropping && isDraggingCrop) {
+            ctx.filter = "none"; // reset filter for drawing shapes
+            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const cx = Math.min(cropStart.x, cropEnd.x);
+            const cy = Math.min(cropStart.y, cropEnd.y);
+            const cw = Math.abs(cropEnd.x - cropStart.x);
+            const ch = Math.abs(cropEnd.y - cropStart.y);
+            
+            ctx.clearRect(cx, cy, cw, ch);
+            ctx.strokeStyle = "#3b82f6";
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(cx, cy, cw, ch);
+            ctx.setLineDash([]); // reset dash
+        }
+    }
+
+    function downloadDesign() {
+        if (!originalImage) return alert("Please upload an image first.");
+        const link = document.createElement('a');
+        link.download = 'mahashankh_studio_export.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+
+    // --- 3D Floor Perspective ---
+    let is3D = false;
+    function toggle3DFloor() {
+        is3D = !is3D;
+        if (is3D) {
+            canvas.style.transform = "perspective(800px) rotateX(60deg) scale(0.8)";
+            canvas.style.boxShadow = "0 30px 40px rgba(0,0,0,0.3)";
+            canvas.style.transition = "transform 0.5s ease, box-shadow 0.5s ease";
+        } else {
+            canvas.style.transform = "none";
+            canvas.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.1)";
+        }
+    }
+
+    // --- Coverage Calculator ---
+    function calculateTiles() {
+        const tw = parseFloat(document.getElementById('calcTileW').value);
+        const th = parseFloat(document.getElementById('calcTileH').value);
+        const areaSqFt = parseFloat(document.getElementById('calcArea').value);
+        
+        if (!tw || !th || !areaSqFt) return alert("Please enter valid numbers");
+
+        const tileAreaSqM = (tw / 1000) * (th / 1000);
+        const tileAreaSqFt = tileAreaSqM * 10.7639;
+        
+        const exactTiles = areaSqFt / tileAreaSqFt;
+        const wastage = exactTiles * 0.10; // 10% wastage
+        const totalTiles = Math.ceil(exactTiles + wastage);
+        const boxQty = Math.ceil(totalTiles / 2);
+
+        const resDiv = document.getElementById('calcResult');
+        resDiv.innerHTML = `
+            <strong>Area:</strong> ${areaSqFt} Sq.Ft <br>
+            <strong>Tile Area:</strong> ${tileAreaSqFt.toFixed(2)} Sq.Ft <br>
+            <strong>Tiles Needed:</strong> ${Math.ceil(exactTiles)} <br>
+            <strong>With 10% Wastage:</strong> ${totalTiles} Tiles <br>
+            <strong>Est. Boxes (2/box):</strong> ${boxQty} Boxes
+        `;
+        resDiv.classList.remove('hidden');
+    }
+
+    // --- Crop Tool ---
+    let isCropping = false;
+    let isDraggingCrop = false;
+    let cropStart = {x: 0, y: 0};
+    let cropEnd = {x: 0, y: 0};
+
+    function toggleCropMode() {
+        if (!originalImage) return alert("Upload an image first.");
+        isCropping = !isCropping;
+        
+        const btnToggle = document.getElementById('btnToggleCrop');
+        const btnApply = document.getElementById('btnApplyCrop');
+        
+        if (isCropping) {
+            btnToggle.innerText = "✖ Cancel Crop";
+            btnApply.classList.remove('hidden');
+            // Force 1x1 pattern for cropping
+            generatePattern(1, 1);
+            canvas.style.cursor = "crosshair";
+        } else {
+            btnToggle.innerText = "✂ Crop Mode";
+            btnApply.classList.add('hidden');
+            canvas.style.cursor = "default";
+            isDraggingCrop = false;
+            renderCanvas();
+        }
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+        if (!isCropping) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        cropStart = {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
+        };
+        cropEnd = {x: cropStart.x, y: cropStart.y};
+        isDraggingCrop = true;
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (!isCropping || !isDraggingCrop) return;
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        cropEnd = {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
+        };
+        renderCanvas();
+    });
+
+    canvas.addEventListener('mouseup', () => {
+        isDraggingCrop = false;
+    });
+
+    function applyCrop() {
+        if (!isCropping) return;
+        
+        const x = Math.min(cropStart.x, cropEnd.x);
+        const y = Math.min(cropStart.y, cropEnd.y);
+        const w = Math.abs(cropEnd.x - cropStart.x);
+        const h = Math.abs(cropEnd.y - cropStart.y);
+
+        if (w < 10 || h < 10) {
+            toggleCropMode(); // cancel if too small
+            return;
+        }
+
+        // Get pixel data from canvas
+        const imageData = ctx.getImageData(x, y, w, h);
+        
+        // Create temp canvas
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = w;
+        tempCanvas.height = h;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.putImageData(imageData, 0, 0);
+
+        // Update original image with the baked crop
+        const img = new Image();
+        img.onload = function() {
+            originalImage = img;
+            resetState(); // Reset filters/rotation since they are now baked into the crop
+        };
+        img.src = tempCanvas.toDataURL();
+        
+        toggleCropMode();
+    }
+</script>
+
+{% endblock %}
