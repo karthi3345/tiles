@@ -427,6 +427,45 @@
                     <input type="checkbox" id="chkTransparent"> Transparent background (PNG)
                 </label>
             </div>
+
+            <!-- PHASE 13 & 15: 3D Room Visualizer -->
+            <div class="tool-section">
+                <h3>13. 3D Room Visualizer (Phase 13 & 15)</h3>
+                <p class="text-xs text-gray-500 mb-2">See your tile applied to a real room.</p>
+                <button class="btn-studio" onclick="openRoomModal()">🏠 Open Room Visualizer</button>
+            </div>
+
+            <!-- PHASE 19: Catalog Generator -->
+            <div class="tool-section">
+                <h3>19. Catalog Generator (Phase 19)</h3>
+                <p class="text-xs text-gray-500 mb-2">Generate PDF product sheets.</p>
+                <button class="btn-studio secondary" onclick="openCatalogModal()">📋 Create Product Sheet</button>
+            </div>
+
+            <!-- PHASE 27 & 20: AI Designer + AI Description -->
+            <div class="tool-section">
+                <h3>27. AI Tile Designer (Phase 27 & 20)</h3>
+                <p class="text-xs text-gray-500 mb-2">Generate tiles from text prompts.</p>
+                <button class="btn-studio secondary" onclick="openAIModal()">✨ Open AI Designer</button>
+            </div>
+
+            <!-- PHASE 22 & 23: Project Management + Collaboration -->
+            <div class="tool-section">
+                <h3>22. Project Management (Phase 22 & 23)</h3>
+                <div class="btn-row">
+                    <button class="btn-studio secondary" onclick="saveProject()">💾 Save</button>
+                    <button class="btn-studio secondary" onclick="loadProject()">📂 Load</button>
+                </div>
+                <button class="btn-studio secondary" onclick="shareProject()">🔗 Share Link</button>
+                <div id="shareOutput" class="hidden mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded break-all"></div>
+            </div>
+
+            <!-- PHASE 28: Manufacturer Mode -->
+            <div class="tool-section">
+                <h3>28. Manufacturer Mode (Phase 28)</h3>
+                <p class="text-xs text-gray-500 mb-2">Full production spec panel.</p>
+                <button class="btn-studio secondary" onclick="openMfgModal()">🏭 Manufacturer Panel</button>
+            </div>
         </div>
 
         <!-- Main Canvas Area -->
@@ -436,7 +475,7 @@
             </div>
             <canvas id="studioCanvas"></canvas>
 
-            <!-- Before/After Overlay (hidden by default) -->
+            <!-- Before/After Overlay -->
             <div id="beforeAfterContainer" class="hidden absolute inset-0 flex items-center justify-center bg-gray-800">
                 <div class="relative overflow-hidden rounded shadow-lg" style="width:800px;max-width:90vw;height:500px;">
                     <img id="imgBefore" src="" class="absolute inset-0 w-full h-full object-contain" style="z-index:1">
@@ -451,6 +490,148 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- ===== MODAL: 3D ROOM VISUALIZER ===== -->
+<div id="roomModal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-xl shadow-2xl w-full" style="max-width:920px">
+    <div class="flex justify-between items-center p-4 border-b">
+      <h2 class="text-lg font-bold text-gray-800">🏠 3D Room Visualizer</h2>
+      <button onclick="closeRoomModal()" class="text-gray-400 hover:text-red-500 text-2xl font-bold">✕</button>
+    </div>
+    <div class="p-4">
+      <div class="flex gap-2 mb-3 flex-wrap">
+        <button onclick="renderRoom('bathroom')"  class="px-3 py-1 bg-blue-50  border border-blue-200  rounded text-sm hover:bg-blue-100">🚿 Bathroom</button>
+        <button onclick="renderRoom('kitchen')"   class="px-3 py-1 bg-yellow-50 border border-yellow-200 rounded text-sm hover:bg-yellow-100">🍳 Kitchen</button>
+        <button onclick="renderRoom('living')"    class="px-3 py-1 bg-orange-50 border border-orange-200 rounded text-sm hover:bg-orange-100">🛋 Living Room</button>
+        <button onclick="renderRoom('lobby')"     class="px-3 py-1 bg-purple-50 border border-purple-200 rounded text-sm hover:bg-purple-100">🏨 Hotel Lobby</button>
+        <button onclick="renderRoom('balcony')"   class="px-3 py-1 bg-green-50  border border-green-200  rounded text-sm hover:bg-green-100">🌿 Balcony</button>
+        <button onclick="renderRoom('office')"    class="px-3 py-1 bg-gray-50   border border-gray-200   rounded text-sm hover:bg-gray-100">💼 Office</button>
+      </div>
+      <canvas id="roomCanvas" width="880" height="500" style="width:100%;border-radius:8px;display:block;background:#1a2035"></canvas>
+      <div class="flex gap-4 mt-3 items-center">
+        <button class="btn-studio" onclick="downloadRoomView()" style="width:auto;padding:8px 16px;">⬇ Download</button>
+        <div class="flex-1">
+          <label class="text-xs text-gray-500">Lighting <span id="valLighting">1.0</span></label>
+          <input type="range" id="sliderLighting" min="0.3" max="1.8" step="0.05" value="1" oninput="document.getElementById('valLighting').innerText=parseFloat(this.value).toFixed(1);rerenderRoom()" class="w-full">
+        </div>
+        <div class="flex-1">
+          <label class="text-xs text-gray-500">Tile Scale <span id="valRoomScale">60</span></label>
+          <input type="range" id="sliderRoomScale" min="20" max="200" step="5" value="60" oninput="document.getElementById('valRoomScale').innerText=this.value;rerenderRoom()" class="w-full">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: CATALOG GENERATOR ===== -->
+<div id="catalogModal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-xl shadow-2xl w-full" style="max-width:620px">
+    <div class="flex justify-between items-center p-4 border-b">
+      <h2 class="text-lg font-bold">📋 Product Sheet Generator</h2>
+      <button onclick="closeCatalogModal()" class="text-gray-400 hover:text-red-500 text-2xl font-bold">✕</button>
+    </div>
+    <div class="p-5 grid grid-cols-2 gap-3">
+      <div><label class="text-xs text-gray-500 font-medium">Product Name</label><input id="catName" class="w-full border rounded p-2 text-sm mt-1" value="Royal Marble"></div>
+      <div><label class="text-xs text-gray-500 font-medium">SKU / Code</label><input id="catSKU" class="w-full border rounded p-2 text-sm mt-1" value="RM-001"></div>
+      <div><label class="text-xs text-gray-500 font-medium">Size (mm)</label><input id="catSize" class="w-full border rounded p-2 text-sm mt-1" value="600 × 1200 mm"></div>
+      <div><label class="text-xs text-gray-500 font-medium">Finish</label>
+        <select id="catFinish" class="w-full border rounded p-2 text-sm mt-1">
+          <option>High Gloss</option><option>Matte</option><option>Satin</option><option>Polished</option><option>Textured</option>
+        </select>
+      </div>
+      <div><label class="text-xs text-gray-500 font-medium">Application</label>
+        <select id="catSurface" class="w-full border rounded p-2 text-sm mt-1">
+          <option>Wall / Floor</option><option>Wall Only</option><option>Floor Only</option><option>Outdoor</option>
+        </select>
+      </div>
+      <div><label class="text-xs text-gray-500 font-medium">Collection</label><input id="catSeries" class="w-full border rounded p-2 text-sm mt-1" value="Marble Series"></div>
+      <div><label class="text-xs text-gray-500 font-medium">Manufacturer</label><input id="catMfg" class="w-full border rounded p-2 text-sm mt-1" value="MAHASHANKH"></div>
+      <div><label class="text-xs text-gray-500 font-medium">Material</label><input id="catMaterial" class="w-full border rounded p-2 text-sm mt-1" value="Vitrified Ceramic"></div>
+      <div class="col-span-2"><label class="text-xs text-gray-500 font-medium">Product Description</label>
+        <textarea id="catDesc" class="w-full border rounded p-2 text-sm mt-1" rows="2">Premium quality tile with elegant marble finish. Suitable for both residential and commercial spaces.</textarea>
+      </div>
+    </div>
+    <div class="px-5 pb-5">
+      <button class="btn-studio w-full" onclick="generateCatalogPDF()">📄 Generate PDF Product Sheet</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: AI DESIGNER ===== -->
+<div id="aiModal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-xl shadow-2xl w-full" style="max-width:540px">
+    <div class="flex justify-between items-center p-4 border-b">
+      <h2 class="text-lg font-bold">✨ AI Tile Designer</h2>
+      <button onclick="closeAIModal()" class="text-gray-400 hover:text-red-500 text-2xl font-bold">✕</button>
+    </div>
+    <div class="p-5">
+      <p class="text-sm text-gray-500 mb-3">Describe the tile design you want to create:</p>
+      <textarea id="aiPrompt" class="w-full border rounded p-3 text-sm mb-3" rows="3" placeholder="e.g. Luxury beige marble tile with golden veins, high-gloss finish, elegant..."></textarea>
+      <div class="flex gap-3 mb-4">
+        <select id="aiStyle" class="flex-1 border rounded p-2 text-sm">
+          <option value="marble tile, luxury">Marble</option>
+          <option value="stone tile, natural">Stone</option>
+          <option value="wood tile, warm">Wood</option>
+          <option value="geometric tile, modern">Geometric</option>
+          <option value="terrazzo tile">Terrazzo</option>
+          <option value="mosaic tile, colorful">Mosaic</option>
+          <option value="cement tile, minimal">Cement</option>
+        </select>
+        <select id="aiSize" class="flex-1 border rounded p-2 text-sm">
+          <option value="600x600mm">600 × 600 mm</option>
+          <option value="600x1200mm">600 × 1200 mm</option>
+          <option value="300x600mm">300 × 600 mm</option>
+          <option value="800x1600mm">800 × 1600 mm</option>
+        </select>
+      </div>
+      <button id="btnAIGenerate" class="btn-studio w-full" onclick="generateAITile()">✨ Generate Tile</button>
+      <div id="aiStatus" class="hidden mt-4 text-center">
+        <div class="animate-spin inline-block w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mb-2"></div>
+        <p class="text-sm text-gray-500">Generating your tile design...</p>
+      </div>
+      <div id="aiResult" class="hidden mt-4">
+        <img id="aiResultImg" src="" class="w-full rounded border shadow" alt="AI Generated Tile">
+        <div class="flex gap-2 mt-2">
+          <button class="btn-studio flex-1" onclick="loadAITileToCanvas()">Add to Studio Canvas</button>
+          <button class="btn-studio secondary flex-1" onclick="generateAITile()">Regenerate</button>
+        </div>
+        <div id="aiDescription" class="mt-3 bg-gray-50 rounded p-3 text-xs text-gray-600 hidden"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: MANUFACTURER MODE ===== -->
+<div id="mfgModal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-xl shadow-2xl w-full" style="max-width:640px">
+    <div class="flex justify-between items-center p-4 border-b bg-gray-800 rounded-t-xl">
+      <h2 class="text-lg font-bold text-white">🏭 Manufacturer Mode</h2>
+      <button onclick="closeMfgModal()" class="text-gray-300 hover:text-white text-2xl font-bold">✕</button>
+    </div>
+    <div class="p-5 grid grid-cols-2 gap-3">
+      <div><label class="text-xs text-gray-500 font-medium">Design Number</label><input id="mfgDesign" class="w-full border rounded p-2 text-sm mt-1" value="D-2024-001"></div>
+      <div><label class="text-xs text-gray-500 font-medium">Batch / Lot Number</label><input id="mfgBatch" class="w-full border rounded p-2 text-sm mt-1" value="LOT-A-2024"></div>
+      <div><label class="text-xs text-gray-500 font-medium">Product Series</label><input id="mfgSeries" class="w-full border rounded p-2 text-sm mt-1" value="Royal Marble"></div>
+      <div><label class="text-xs text-gray-500 font-medium">Collection Number</label><input id="mfgCollection" class="w-full border rounded p-2 text-sm mt-1" value="COL-2024-RM"></div>
+      <div><label class="text-xs text-gray-500 font-medium">Width (mm)</label><input id="mfgW" class="w-full border rounded p-2 text-sm mt-1" value="600" type="number"></div>
+      <div><label class="text-xs text-gray-500 font-medium">Height (mm)</label><input id="mfgH" class="w-full border rounded p-2 text-sm mt-1" value="1200" type="number"></div>
+      <div><label class="text-xs text-gray-500 font-medium">Thickness (mm)</label><input id="mfgThick" class="w-full border rounded p-2 text-sm mt-1" value="9" type="number"></div>
+      <div><label class="text-xs text-gray-500 font-medium">Surface Finish</label>
+        <select id="mfgFinish" class="w-full border rounded p-2 text-sm mt-1">
+          <option>High Gloss</option><option>Matte</option><option>Satin</option><option>Polished</option>
+        </select>
+      </div>
+      <div><label class="text-xs text-gray-500 font-medium">Water Absorption (%)</label><input id="mfgWA" class="w-full border rounded p-2 text-sm mt-1" value="≤0.5"></div>
+      <div><label class="text-xs text-gray-500 font-medium">Breaking Strength (N)</label><input id="mfgBS" class="w-full border rounded p-2 text-sm mt-1" value="≥1300"></div>
+      <div><label class="text-xs text-gray-500 font-medium">Tiles per Box</label><input id="mfgQty" class="w-full border rounded p-2 text-sm mt-1" value="2" type="number"></div>
+      <div><label class="text-xs text-gray-500 font-medium">Box Weight (kg)</label><input id="mfgWt" class="w-full border rounded p-2 text-sm mt-1" value="38.4" type="number"></div>
+    </div>
+    <div class="px-5 pb-5 flex gap-3">
+      <button class="btn-studio flex-1" onclick="exportMfgSheet()">📄 Export Tech Sheet (PDF)</button>
+      <button class="btn-studio secondary flex-1" onclick="fillCatalogFromMfg()">→ Send to Catalog</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1286,6 +1467,342 @@
         });
         event.currentTarget.classList.add('border-blue-500','border-2');
     }
+
+    // =============================================
+    // PHASE 13 & 15: 3D ROOM VISUALIZER
+    // =============================================
+    let currentRoomType = 'bathroom';
+    let roomTileImg     = null;
+
+    function openRoomModal() {
+        document.getElementById('roomModal').classList.remove('hidden');
+        renderRoom('bathroom');
+    }
+    function closeRoomModal() {
+        document.getElementById('roomModal').classList.add('hidden');
+    }
+    function renderRoom(type) {
+        currentRoomType = type;
+        const dataURL = canvas.toDataURL({ format: 'png', multiplier: 0.6 });
+        const img = new Image();
+        img.onload = () => { roomTileImg = img; drawRoom(); };
+        img.src = dataURL;
+    }
+    function rerenderRoom() { if (roomTileImg) drawRoom(); }
+
+    function drawRoom() {
+        const rc  = document.getElementById('roomCanvas');
+        const ctx = rc.getContext('2d');
+        const W = rc.width, H = rc.height;
+        const lighting  = parseFloat(document.getElementById('sliderLighting').value);
+        const tileScale = parseInt(document.getElementById('sliderRoomScale').value);
+        ctx.clearRect(0, 0, W, H);
+
+        const roomCfg = {
+            bathroom: { sky:'#b8d8e8', wall:'#e8f4f8', floor:'#d0e8f0' },
+            kitchen:  { sky:'#f0e8c8', wall:'#f5f0e8', floor:'#e8d8b0' },
+            living:   { sky:'#e0dcd0', wall:'#f0ece4', floor:'#c8b890' },
+            lobby:    { sky:'#d8cca8', wall:'#f8f4ec', floor:'#b8a870' },
+            balcony:  { sky:'#a8d0a0', wall:'#e8f0e0', floor:'#c0d0a0' },
+            office:   { sky:'#c8d4e0', wall:'#eef2f5', floor:'#b0bcc8' },
+        };
+        const cfg = roomCfg[currentRoomType] || roomCfg.bathroom;
+
+        // Sky gradient
+        const skyG = ctx.createLinearGradient(0,0,0,H*0.55);
+        skyG.addColorStop(0, cfg.sky); skyG.addColorStop(1, cfg.wall);
+        ctx.fillStyle = skyG; ctx.fillRect(0, 0, W, H);
+
+        // Vanishing point
+        const VX = W * 0.5, VY = H * 0.4;
+
+        function drawFaceWithTile(corners, shadowAlpha, tx, ty, sx, sy) {
+            // corners = [TL, TR, BR, BL] in screen space
+            if (!roomTileImg) return;
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(corners[0][0], corners[0][1]);
+            ctx.lineTo(corners[1][0], corners[1][1]);
+            ctx.lineTo(corners[2][0], corners[2][1]);
+            ctx.lineTo(corners[3][0], corners[3][1]);
+            ctx.closePath();
+            ctx.clip();
+            // Set transform: map tile to face using bottom-left as origin
+            const [tl, tr, br, bl] = corners;
+            ctx.setTransform(sx, sy * 0.05, sx * 0.02, sy, bl[0] + tx, bl[1] + ty);
+            const tW = tileScale, tH = tileScale;
+            const cols = Math.ceil(W / tW) + 2, rows = Math.ceil(H / tH) + 2;
+            for (let r = -1; r < rows; r++) {
+                for (let c = -1; c < cols; c++) {
+                    ctx.drawImage(roomTileImg, c * tW, r * tH, tW, tH);
+                }
+            }
+            ctx.restore();
+            // Shadow overlay for depth
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(corners[0][0], corners[0][1]);
+            ctx.lineTo(corners[1][0], corners[1][1]);
+            ctx.lineTo(corners[2][0], corners[2][1]);
+            ctx.lineTo(corners[3][0], corners[3][1]);
+            ctx.closePath();
+            ctx.fillStyle = `rgba(0,0,0,${shadowAlpha / lighting})`;
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Floor corners
+        const floorTL = [VX - W*0.22, VY+5]; const floorTR = [VX + W*0.22, VY+5];
+        const floorBR = [W*0.98, H*0.98];     const floorBL = [W*0.02, H*0.98];
+        drawFaceWithTile([floorTL,floorTR,floorBR,floorBL], 0.18, -tileScale*2, -tileScale, tileScale/roomTileImg.width*2, tileScale/roomTileImg.height*2.5);
+
+        // Back wall corners
+        const bwTL = [VX - W*0.22, VY - H*0.35]; const bwTR = [VX + W*0.22, VY - H*0.35];
+        const bwBR = [VX + W*0.22, VY+5];         const bwBL = [VX - W*0.22, VY+5];
+        drawFaceWithTile([bwTL,bwTR,bwBR,bwBL], 0.12, 0, 0, tileScale/roomTileImg.width*0.5, tileScale/roomTileImg.height*0.5);
+
+        // Left wall corners
+        const lwTL = [0, 0];               const lwTR = [VX - W*0.22, VY - H*0.35];
+        const lwBR = [VX - W*0.22, VY+5]; const lwBL = [0, H*0.98];
+        drawFaceWithTile([lwTL,lwTR,lwBR,lwBL], 0.35, 0, 0, tileScale/roomTileImg.width*0.7, tileScale/roomTileImg.height*0.7);
+
+        // Right wall corners
+        const rwTL = [VX + W*0.22, VY - H*0.35]; const rwTR = [W, 0];
+        const rwBR = [W, H*0.98];                 const rwBL = [VX + W*0.22, VY+5];
+        drawFaceWithTile([rwTL,rwTR,rwBR,rwBL], 0.25, 0, 0, tileScale/roomTileImg.width*0.7, tileScale/roomTileImg.height*0.7);
+
+        // Ceiling
+        ctx.save();
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(W,0);
+        ctx.lineTo(VX+W*0.22, VY-H*0.35); ctx.lineTo(VX-W*0.22, VY-H*0.35); ctx.closePath();
+        ctx.fillStyle = cfg.sky; ctx.globalAlpha = 0.8; ctx.fill(); ctx.restore();
+
+        // Label
+        const labels = { bathroom:'🚿 BATHROOM', kitchen:'🍳 KITCHEN', living:'🛋 LIVING ROOM', lobby:'🏨 HOTEL LOBBY', balcony:'🌿 BALCONY', office:'💼 OFFICE' };
+        ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = 'bold 15px Arial';
+        ctx.fillText(labels[currentRoomType]||'ROOM VIEW', 14, 30);
+    }
+
+    function downloadRoomView() {
+        const rc = document.getElementById('roomCanvas');
+        const link = document.createElement('a');
+        link.download = `mahashankh_room_${currentRoomType}.png`;
+        link.href = rc.toDataURL('image/png');
+        link.click();
+    }
+
+    // =============================================
+    // PHASE 19: CATALOG PDF GENERATOR
+    // =============================================
+    function openCatalogModal()  { document.getElementById('catalogModal').classList.remove('hidden'); }
+    function closeCatalogModal() { document.getElementById('catalogModal').classList.add('hidden'); }
+
+    function generateCatalogPDF() {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const W = 297, H = 210;
+
+        // Background
+        pdf.setFillColor(248, 248, 248); pdf.rect(0, 0, W, H, 'F');
+        // Header bar
+        pdf.setFillColor(30, 41, 59); pdf.rect(0, 0, W, 18, 'F');
+        pdf.setTextColor(255,255,255); pdf.setFontSize(13); pdf.setFont('helvetica','bold');
+        pdf.text('MAHASHANKH TILES STUDIO', 10, 12);
+        pdf.setFontSize(9); pdf.text('PRODUCT CATALOG SHEET', W - 10, 12, { align: 'right' });
+
+        // Tile image
+        try {
+            const tileURL = canvas.toDataURL({ format: 'jpeg', quality: 0.92 });
+            pdf.addImage(tileURL, 'JPEG', 10, 25, 90, 90);
+        } catch(e) {}
+
+        // Product details
+        const g = id => document.getElementById(id)?.value || '';
+        const details = [
+            ['Product Name', g('catName')],
+            ['SKU / Code',   g('catSKU')],
+            ['Size',         g('catSize')],
+            ['Finish',       g('catFinish')],
+            ['Application',  g('catSurface')],
+            ['Collection',   g('catSeries')],
+            ['Manufacturer', g('catMfg')],
+            ['Material',     g('catMaterial')],
+        ];
+        pdf.setTextColor(30, 41, 59); pdf.setFontSize(18); pdf.setFont('helvetica','bold');
+        pdf.text(g('catName') || 'Tile Product', 110, 32);
+        pdf.setFontSize(11); pdf.setTextColor(100,116,139);
+        pdf.text(`SKU: ${g('catSKU')}  |  ${g('catSize')}  |  ${g('catFinish')}`, 110, 40);
+
+        pdf.setFontSize(9); let yy = 52;
+        details.forEach(([k, v]) => {
+            pdf.setFont('helvetica','bold'); pdf.setTextColor(71,85,105); pdf.text(k + ':', 110, yy);
+            pdf.setFont('helvetica','normal'); pdf.setTextColor(30,41,59); pdf.text(v, 160, yy);
+            yy += 8;
+        });
+
+        // Description
+        pdf.setFontSize(9); pdf.setFont('helvetica','bold'); pdf.setTextColor(71,85,105);
+        pdf.text('Description:', 110, yy + 4);
+        pdf.setFont('helvetica','normal'); pdf.setTextColor(30,41,59);
+        const descLines = pdf.splitTextToSize(g('catDesc'), 170);
+        pdf.text(descLines, 110, yy + 12);
+
+        // Footer
+        pdf.setFillColor(30, 41, 59); pdf.rect(0, H - 12, W, 12, 'F');
+        pdf.setTextColor(255,255,255); pdf.setFontSize(8);
+        pdf.text('MAHASHANKH TILES  |  Design. Edit. Visualize. Sell.', 10, H - 4);
+        pdf.text(new Date().toLocaleDateString(), W - 10, H - 4, { align: 'right' });
+
+        pdf.save(`${g('catName') || 'product'}_${g('catSKU')}_sheet.pdf`);
+    }
+
+    // =============================================
+    // PHASE 27 & 20: AI TILE DESIGNER
+    // =============================================
+    function openAIModal()  { document.getElementById('aiModal').classList.remove('hidden'); }
+    function closeAIModal() { document.getElementById('aiModal').classList.add('hidden'); }
+
+    let _aiResultURL = null;
+
+    function generateAITile() {
+        const prompt   = document.getElementById('aiPrompt').value;
+        const style    = document.getElementById('aiStyle').value;
+        const size     = document.getElementById('aiSize').value;
+        const fullPrompt = `Professional tile design photography: ${prompt}, ${style}, ${size} format, seamless pattern, top-down flat lay, studio lighting, ultra detailed, product photography`;
+
+        document.getElementById('aiStatus').classList.remove('hidden');
+        document.getElementById('aiResult').classList.add('hidden');
+        document.getElementById('btnAIGenerate').disabled = true;
+
+        fetch('/generate-image/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': getCookie('csrftoken') },
+            body: `prompt=${encodeURIComponent(fullPrompt)}`
+        })
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('aiStatus').classList.add('hidden');
+            document.getElementById('btnAIGenerate').disabled = false;
+            if (data.image_url || data.url) {
+                _aiResultURL = data.image_url || data.url;
+                document.getElementById('aiResultImg').src = _aiResultURL;
+                document.getElementById('aiResult').classList.remove('hidden');
+            } else {
+                alert('AI generation failed. Please try again.');
+            }
+        })
+        .catch(() => {
+            document.getElementById('aiStatus').classList.add('hidden');
+            document.getElementById('btnAIGenerate').disabled = false;
+            alert('Connection error. Make sure you are logged in and the server is running.');
+        });
+    }
+
+    function loadAITileToCanvas() {
+        if (!_aiResultURL) return;
+        fabric.Image.fromURL(_aiResultURL, function(img) {
+            img.scaleToWidth(300);
+            img.set({ left: canvas.width/2, top: canvas.height/2, originX:'center', originY:'center', cornerColor:'#3b82f6', cornerStyle:'circle' });
+            img.filters = [];
+            canvas.add(img); canvas.setActiveObject(img); canvas.renderAll();
+            closeAIModal();
+        }, { crossOrigin: 'anonymous' });
+    }
+
+    function getCookie(name) {
+        const v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+        return v ? v[2] : '';
+    }
+
+    // =============================================
+    // PHASE 22 & 23: PROJECT MANAGEMENT + SHARE
+    // =============================================
+    function saveProject() {
+        const json = JSON.stringify(canvas.toJSON());
+        localStorage.setItem('mahashankh_studio_project', json);
+        alert('✅ Project saved to browser storage!');
+    }
+
+    function loadProject() {
+        const json = localStorage.getItem('mahashankh_studio_project');
+        if (!json) return alert('No saved project found.');
+        canvas.loadFromJSON(json, () => {
+            canvas.renderAll();
+            alert('✅ Project loaded!');
+        });
+    }
+
+    function shareProject() {
+        const json    = JSON.stringify(canvas.toJSON());
+        const encoded = btoa(unescape(encodeURIComponent(json)));
+        // Only use first 500 chars to keep URL reasonable; full save should use backend
+        const shortRef = encoded.substring(0, 8);
+        const shareURL = `${window.location.origin}/studio/?project=${shortRef}`;
+        const out = document.getElementById('shareOutput');
+        out.innerHTML = `<strong>Share Link (saved locally):</strong><br>${shareURL}<br><br><em>Copy and send to client for preview.</em>`;
+        out.classList.remove('hidden');
+        navigator.clipboard?.writeText(shareURL).catch(()=>{});
+    }
+
+    // =============================================
+    // PHASE 28: MANUFACTURER MODE
+    // =============================================
+    function openMfgModal()  { document.getElementById('mfgModal').classList.remove('hidden'); }
+    function closeMfgModal() { document.getElementById('mfgModal').classList.add('hidden'); }
+
+    function fillCatalogFromMfg() {
+        document.getElementById('catName').value    = document.getElementById('mfgSeries').value;
+        document.getElementById('catSKU').value     = document.getElementById('mfgDesign').value;
+        document.getElementById('catSize').value    = `${document.getElementById('mfgW').value} × ${document.getElementById('mfgH').value} mm`;
+        document.getElementById('catFinish').value  = document.getElementById('mfgFinish').value;
+        document.getElementById('catSeries').value  = document.getElementById('mfgCollection').value;
+        closeMfgModal();
+        openCatalogModal();
+    }
+
+    function exportMfgSheet() {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+        const g = id => document.getElementById(id)?.value || '';
+        const W = 210;
+
+        pdf.setFillColor(30, 41, 59); pdf.rect(0, 0, W, 20, 'F');
+        pdf.setTextColor(255,255,255); pdf.setFontSize(14); pdf.setFont('helvetica','bold');
+        pdf.text('TECHNICAL SPECIFICATION SHEET', W/2, 13, { align: 'center' });
+
+        pdf.setTextColor(30,41,59); pdf.setFontSize(11); pdf.setFont('helvetica','bold');
+        pdf.text(g('mfgSeries'), 10, 30);
+
+        const specs = [
+            ['Design Number',     g('mfgDesign')],
+            ['Batch / Lot',       g('mfgBatch')],
+            ['Collection',        g('mfgCollection')],
+            ['Dimensions (mm)',   `${g('mfgW')} × ${g('mfgH')} × ${g('mfgThick')}`],
+            ['Surface Finish',    g('mfgFinish')],
+            ['Water Absorption',  g('mfgWA')],
+            ['Breaking Strength', g('mfgBS')],
+            ['Tiles per Box',     g('mfgQty')],
+            ['Box Weight (kg)',   g('mfgWt')],
+        ];
+
+        let y = 40;
+        specs.forEach(([k, v]) => {
+            pdf.setFontSize(9);
+            pdf.setFillColor(248,250,252); pdf.rect(10, y-5, W-20, 8, 'F');
+            pdf.setFont('helvetica','bold'); pdf.setTextColor(71,85,105); pdf.text(k, 14, y);
+            pdf.setFont('helvetica','normal'); pdf.setTextColor(30,41,59); pdf.text(v, 100, y);
+            y += 10;
+        });
+
+        try { const tileURL = canvas.toDataURL({ format:'jpeg', quality:0.9 }); pdf.addImage(tileURL,'JPEG',W-80,30,70,70); } catch(e){}
+
+        pdf.setFillColor(30,41,59); pdf.rect(0,285,W,12,'F');
+        pdf.setTextColor(255,255,255); pdf.setFontSize(8);
+        pdf.text('MAHASHANKH TILES STUDIO  |  Confidential Technical Document', W/2, 293, {align:'center'});
+
+        pdf.save(`tech_sheet_${g('mfgDesign')}.pdf`);
+    }
+
 </script>
 
 {% endblock %}
