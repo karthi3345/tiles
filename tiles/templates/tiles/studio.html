@@ -127,23 +127,24 @@
     @media (max-width: 768px) {
         .studio-container {
             flex-direction: row; 
-            height: 85vh;
+            height: auto;
+            min-height: 50vh;
             position: relative;
             border: none;
         }
         .studio-sidebar {
             display: block;
-            position: absolute;
+            position: fixed; /* Changed to fixed so it scrolls over everything cleanly */
             top: 0;
             bottom: 0;
             left: 0;
             width: 320px;
             max-width: 85vw;
-            height: 100%;
+            height: 100vh;
             border-right: 1px solid #e2e8f0;
             border-top: none;
             padding: 16px;
-            z-index: 50;
+            z-index: 10000;
             box-shadow: 10px 0 25px -5px rgba(0, 0, 0, 0.2);
             border-radius: 0;
             background: white;
@@ -155,7 +156,8 @@
             transform: translateX(0);
         }
         .studio-main {
-            height: 100%; 
+            height: auto; 
+            min-height: 50vh;
             width: 100%;
             overflow: hidden; 
             padding: 10px;
@@ -599,8 +601,8 @@
         <!-- Main Canvas Area -->
         <div class="studio-main" id="canvasWrapper">
             <!-- Mobile Toggle Button (Visible only on mobile) -->
-            <button id="mobileToolsBtn" class="absolute bottom-4 right-4 bg-brand-600 text-white rounded-full px-4 py-3 shadow-xl z-40 items-center gap-2" onclick="toggleSidebar()">
-                <iconify-icon icon="lucide:settings-2" class="text-xl"></iconify-icon>
+            <button id="mobileToolsBtn" class="fixed bottom-6 right-6 bg-brand-600 text-white rounded-full px-5 py-4 shadow-[0_10px_40px_rgba(37,99,235,0.4)] z-[9999] items-center gap-2 transition-all" onclick="toggleSidebar()">
+                <iconify-icon icon="lucide:settings-2" class="text-2xl"></iconify-icon>
                 <span class="text-sm font-bold">Tools Menu</span>
             </button>
 
@@ -627,7 +629,7 @@
 </div>
 
 <!-- Close Mobile Tools Backdrop -->
-<div id="mobileToolsBackdrop" class="hidden md:hidden fixed inset-0 bg-black bg-opacity-50 z-40" onclick="toggleSidebar()"></div>
+<div id="mobileToolsBackdrop" class="hidden md:hidden fixed inset-0 bg-black bg-opacity-50 z-[9999]" onclick="toggleSidebar()"></div>
 
 <!-- ===== MODAL: 3D ROOM VISUALIZER ===== -->
 <div id="roomModal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-[99999] flex items-center justify-center p-4">
