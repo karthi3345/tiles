@@ -116,17 +116,16 @@
         .studio-container {
             flex-direction: column-reverse; /* Canvas on top, tools below */
             height: auto;
-            min-height: 85vh;
         }
         .studio-sidebar {
             width: 100%;
-            height: 50vh;
+            height: 500px; /* Fixed height instead of vh to avoid keyboard resize issues */
             border-right: none;
             border-top: 1px solid #e2e8f0;
             padding: 12px;
         }
         .studio-main {
-            height: 50vh;
+            height: 350px; /* Fixed height for canvas container on mobile */
             overflow: hidden; /* Prevent body scroll, we will scale canvas to fit */
             padding: 10px;
         }
@@ -153,7 +152,8 @@
     }
 </style>
 
-<div class="container mx-auto mt-6 mb-12">
+<!-- Added pt-24 to prevent overlap with fixed navbar -->
+<div class="container mx-auto pt-24 mt-6 mb-12">
     <div class="mb-4 flex items-center justify-between">
         <h1 class="text-2xl font-bold text-gray-800">🧱 MAHASHANKH TILES STUDIO</h1>
         <p class="text-gray-500">Professional Tile Design, Editing & Visualization</p>
