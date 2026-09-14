@@ -21,6 +21,17 @@
         border-right: 1px solid #e2e8f0;
         padding: 20px;
         overflow-y: auto;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+    .studio-sidebar.collapsed {
+        display: none !important;
+    }
+    #mobileToolsBtn {
+        display: none;
+    }
+    #mobileToolsBtn.show-on-desktop {
+        display: flex !important;
     }
     .studio-main {
         flex: 1;
@@ -163,6 +174,12 @@
         .btn-row {
             flex-wrap: wrap;
         }
+        #mobileToolsBtn {
+            display: flex;
+        }
+        #mobileToolsBtn.hidden-on-mobile {
+            display: none !important;
+        }
     }
     
     /* Prevent pull-to-refresh and page scrolling when touching the canvas */
@@ -181,9 +198,13 @@
     <div class="studio-container">
         <!-- Sidebar Tools -->
         <div class="studio-sidebar">
+            <!-- Collapse Sidebar Button -->
+            <button onclick="toggleSidebar()" class="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-500 hover:text-slate-800 transition-colors z-10" title="Hide Toolbar">
+                <iconify-icon icon="lucide:panel-left-close" class="text-xl"></iconify-icon>
+            </button>
             
             <!-- PHASE 1: Upload & Canvas -->
-            <div class="tool-section">
+            <div class="tool-section mt-6">
                 <h3>1. Upload & Canvas (Phase 1)</h3>
                 <!-- Drag & Drop Zone -->
                 <div id="dropZone" style="border:2px dashed #94a3b8;border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:0.2s;margin-bottom:8px;" 
@@ -575,7 +596,7 @@
         <!-- Main Canvas Area -->
         <div class="studio-main" id="canvasWrapper">
             <!-- Mobile Toggle Button (Visible only on mobile) -->
-            <button id="mobileToolsBtn" class="md:hidden absolute bottom-4 right-4 bg-brand-600 text-white rounded-full px-4 py-3 shadow-xl z-40 flex items-center gap-2" onclick="toggleMobileTools()">
+            <button id="mobileToolsBtn" class="absolute bottom-4 right-4 bg-brand-600 text-white rounded-full px-4 py-3 shadow-xl z-40 items-center gap-2" onclick="toggleSidebar()">
                 <iconify-icon icon="lucide:settings-2" class="text-xl"></iconify-icon>
                 <span class="text-sm font-bold">Tools Menu</span>
             </button>
@@ -603,7 +624,7 @@
 </div>
 
 <!-- Close Mobile Tools Backdrop -->
-<div id="mobileToolsBackdrop" class="hidden md:hidden fixed inset-0 bg-black bg-opacity-50 z-40" onclick="toggleMobileTools()"></div>
+<div id="mobileToolsBackdrop" class="hidden md:hidden fixed inset-0 bg-black bg-opacity-50 z-40" onclick="toggleSidebar()"></div>
 
 <!-- ===== MODAL: 3D ROOM VISUALIZER ===== -->
 <div id="roomModal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-[99999] flex items-center justify-center p-4">
@@ -784,17 +805,28 @@
     // Give layout a moment to settle, then scale
     setTimeout(resizeCanvas, 100);
 
-    // Mobile Tools Toggle
-    function toggleMobileTools() {
+    // Sidebar Toggle
+    function toggleSidebar() {
         const sidebar = document.querySelector('.studio-sidebar');
         const backdrop = document.getElementById('mobileToolsBackdrop');
-        if(sidebar.classList.contains('show-tools')) {
-            sidebar.classList.remove('show-tools');
-            backdrop.classList.add('hidden');
+        const fab = document.getElementById('mobileToolsBtn');
+        const isMobile = window.innerWidth <= 768;
+
+        if (isMobile) {
+            if(sidebar.classList.contains('show-tools')) {
+                sidebar.classList.remove('show-tools');
+                backdrop.classList.add('hidden');
+                fab.classList.remove('hidden-on-mobile');
+            } else {
+                sidebar.classList.add('show-tools');
+                backdrop.classList.remove('hidden');
+                fab.classList.add('hidden-on-mobile');
+            }
         } else {
-            sidebar.classList.add('show-tools');
-            backdrop.classList.remove('hidden');
+            sidebar.classList.toggle('collapsed');
+            fab.classList.toggle('show-on-desktop');
         }
+        setTimeout(resizeCanvas, 150);
     }
 
     // Pinch-to-zoom for touch devices (Phase 24)
