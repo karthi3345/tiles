@@ -22,10 +22,11 @@
         padding: 20px;
         overflow-y: auto;
         position: relative;
-        transition: all 0.3s ease;
+        margin-left: 0;
+        transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .studio-sidebar.collapsed {
-        display: none !important;
+        margin-left: -340px;
     }
     #mobileToolsBtn {
         display: none;
@@ -131,7 +132,7 @@
             border: none;
         }
         .studio-sidebar {
-            display: none; /* Hidden by default on mobile, toggled via menu icon */
+            display: block;
             position: absolute;
             top: 0;
             bottom: 0;
@@ -147,9 +148,11 @@
             border-radius: 0;
             background: white;
             overflow-y: auto;
+            margin-left: 0;
+            transform: translateX(-100%);
         }
         .studio-sidebar.show-tools {
-            display: block;
+            transform: translateX(0);
         }
         .studio-main {
             height: 100%; 
@@ -826,7 +829,16 @@
             sidebar.classList.toggle('collapsed');
             fab.classList.toggle('show-on-desktop');
         }
-        setTimeout(resizeCanvas, 150);
+        
+        // Continuously resize canvas during the 300ms CSS transition so it scales smoothly
+        let startTime = performance.now();
+        function animateResize(time) {
+            resizeCanvas();
+            if (time - startTime < 350) {
+                requestAnimationFrame(animateResize);
+            }
+        }
+        requestAnimationFrame(animateResize);
     }
 
     // Pinch-to-zoom for touch devices (Phase 24)
