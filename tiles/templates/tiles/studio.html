@@ -128,7 +128,6 @@
         .studio-container {
             flex-direction: row; 
             height: auto;
-            min-height: 50vh;
             position: relative;
             border: none;
         }
@@ -157,10 +156,13 @@
         }
         .studio-main {
             height: auto; 
-            min-height: 50vh;
             width: 100%;
             overflow: hidden; 
             padding: 10px;
+            /* Flex layout ensures perfectly centered canvas */
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .studio-toolbar {
             position: absolute;
@@ -788,10 +790,19 @@
         const canvasEl = document.querySelector('.canvas-container');
         if (!outerEl || !canvasEl) return;
         
+        // Reset height to let it calculate naturally
+        outerEl.style.height = '';
+        
         // Logical size is 800x600, we scale it down visually to fit the container
         const padding = window.innerWidth <= 768 ? 10 : 40;
         const availableWidth = outerEl.clientWidth - padding * 2;
-        const availableHeight = outerEl.clientHeight - padding * 2;
+        
+        // On mobile, height is naturally auto, so we don't want the 600px canvas forcing it to be huge.
+        // We'll calculate scale primarily based on width on mobile, and both on desktop.
+        let availableHeight = outerEl.clientHeight - padding * 2;
+        if (window.innerWidth <= 768) {
+            availableHeight = window.innerHeight * 0.7; // Limit to 70% of screen height
+        }
         
         // Don't scale up past 1, only scale down for smaller screens
         const scale = Math.min(
@@ -801,6 +812,11 @@
         
         canvasEl.style.transform = `scale(${scale})`;
         canvasEl.style.transformOrigin = 'center center';
+        
+        // If scaled down, strictly shrink the outer wrapper so it doesn't leave massive empty gray gaps
+        if (scale < 1) {
+            outerEl.style.height = (600 * scale + padding * 2) + 'px';
+        }
         
         // Let Fabric know the CSS transforms changed so mouse/touch coordinates map correctly
         canvas.calcOffset();
