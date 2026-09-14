@@ -111,6 +111,45 @@
     }
     input[type=range] {
         width: 100%;
+    /* Phase 24: Mobile Responsiveness */
+    @media (max-width: 768px) {
+        .studio-container {
+            flex-direction: column-reverse; /* Canvas on top, tools below */
+            height: auto;
+            min-height: 85vh;
+        }
+        .studio-sidebar {
+            width: 100%;
+            height: 50vh;
+            border-right: none;
+            border-top: 1px solid #e2e8f0;
+            padding: 12px;
+        }
+        .studio-main {
+            height: 50vh;
+            overflow: hidden; /* Prevent body scroll, we will scale canvas to fit */
+            padding: 10px;
+        }
+        .studio-toolbar {
+            position: static; /* Stack nicely instead of floating */
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+        .mb-4.flex.items-center.justify-between {
+            flex-direction: column;
+            text-align: center;
+            gap: 10px;
+        }
+        .btn-row {
+            flex-wrap: wrap;
+        }
+    }
+    
+    /* Prevent pull-to-refresh and page scrolling when touching the canvas */
+    .canvas-container {
+        touch-action: none;
     }
 </style>
 
@@ -689,6 +728,62 @@
         preserveObjectStacking: true // Keep selected objects in their layer
     });
 
+    // Phase 24: Mobile responsive canvas scaling
+    function resizeCanvas() {
+        const outerEl = document.querySelector('.studio-main');
+        const canvasEl = document.querySelector('.canvas-container');
+        if (!outerEl || !canvasEl) return;
+        
+        // Logical size is 800x600, we scale it down visually to fit the container
+        const padding = window.innerWidth <= 768 ? 10 : 40;
+        const availableWidth = outerEl.clientWidth - padding * 2;
+        const availableHeight = outerEl.clientHeight - padding * 2;
+        
+        // Don't scale up past 1, only scale down for smaller screens
+        const scale = Math.min(
+            Math.min(availableWidth / 800, 1),
+            Math.min(availableHeight / 600, 1)
+        );
+        
+        canvasEl.style.transform = `scale(${scale})`;
+        canvasEl.style.transformOrigin = 'center center';
+        
+        // Let Fabric know the CSS transforms changed so mouse/touch coordinates map correctly
+        canvas.calcOffset();
+    }
+    
+    window.addEventListener('resize', resizeCanvas);
+    // Give layout a moment to settle, then scale
+    setTimeout(resizeCanvas, 100);
+
+    // Pinch-to-zoom for touch devices (Phase 24)
+    canvas.on('touch:gesture', function(e) {
+        if (e.e.touches && e.e.touches.length == 2) {
+            // Zoom the active object, or the whole canvas if needed
+            // The simplest approach on mobile is to let fabric handle object scaling
+            // but we can also do canvas zoom if nothing is selected
+            if (!canvas.getActiveObject()) {
+                let zoom = canvas.getZoom();
+                zoom *= (1 + (e.self.scale - 1) * 0.1); 
+                if (zoom > 5) zoom = 5;
+                if (zoom < 0.5) zoom = 0.5;
+                canvas.zoomToPoint({ x: e.self.x, y: e.self.y }, zoom);
+            }
+        }
+    });
+
+    // Reset zoom when clearing canvas
+    function clearCanvas() {
+        if(confirm('Clear entire canvas?')) {
+            canvas.clear();
+            canvas.backgroundColor = '#ffffff';
+            canvas.setZoom(1);
+            canvas.renderAll();
+            saveToHistory();
+        }
+    }
+
+
     // =============================================
     // PHASE 1: UPLOAD & CANVAS
     // =============================================
@@ -1107,13 +1202,6 @@
 
     // =============================================
 
-    function clearCanvas() {
-        if(confirm("Are you sure you want to clear the canvas?")) {
-            canvas.clear();
-            canvas.backgroundColor = '#ffffff';
-            canvas.renderAll();
-        }
-    }
 
     // =============================================
     // PHASE 4: ROTATION & ANGLE TOOLS
