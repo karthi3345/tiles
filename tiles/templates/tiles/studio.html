@@ -114,23 +114,36 @@
     /* Phase 24: Mobile Responsiveness */
     @media (max-width: 768px) {
         .studio-container {
-            flex-direction: column-reverse; /* Canvas on top, tools below */
-            height: auto;
+            flex-direction: column; 
+            height: 100%;
+            position: relative;
+            border: none;
         }
         .studio-sidebar {
+            display: none; /* Hidden by default on mobile, toggled via menu icon */
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
             width: 100%;
-            height: 500px; /* Fixed height instead of vh to avoid keyboard resize issues */
-            border-right: none;
+            height: 60vh;
             border-top: 1px solid #e2e8f0;
-            padding: 12px;
+            padding: 16px;
+            z-index: 50;
+            box-shadow: 0 -10px 25px -5px rgba(0, 0, 0, 0.1);
+            border-radius: 20px 20px 0 0;
+            background: white;
+        }
+        .studio-sidebar.show-tools {
+            display: block;
         }
         .studio-main {
-            height: 350px; /* Fixed height for canvas container on mobile */
-            overflow: hidden; /* Prevent body scroll, we will scale canvas to fit */
+            height: 70vh; /* Taller canvas on mobile */
+            overflow: hidden; 
             padding: 10px;
         }
         .studio-toolbar {
-            position: static; /* Stack nicely instead of floating */
+            position: static;
             flex-wrap: wrap;
             justify-content: center;
             margin-bottom: 10px;
@@ -555,6 +568,12 @@
 
         <!-- Main Canvas Area -->
         <div class="studio-main" id="canvasWrapper">
+            <!-- Mobile Toggle Button (Visible only on mobile) -->
+            <button id="mobileToolsBtn" class="md:hidden absolute bottom-4 right-4 bg-brand-600 text-white rounded-full px-4 py-3 shadow-xl z-40 flex items-center gap-2" onclick="toggleMobileTools()">
+                <iconify-icon icon="lucide:settings-2" class="text-xl"></iconify-icon>
+                <span class="text-sm font-bold">Tools Menu</span>
+            </button>
+
             <div class="studio-toolbar">
                 <span class="bg-white px-3 py-1 rounded shadow text-sm font-medium text-gray-600" id="sizeIndicator">Canvas: 800 × 600</span>
             </div>
@@ -577,8 +596,11 @@
     </div>
 </div>
 
+<!-- Close Mobile Tools Backdrop -->
+<div id="mobileToolsBackdrop" class="hidden md:hidden fixed inset-0 bg-black bg-opacity-50 z-40" onclick="toggleMobileTools()"></div>
+
 <!-- ===== MODAL: 3D ROOM VISUALIZER ===== -->
-<div id="roomModal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4">
+<div id="roomModal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-[99999] flex items-center justify-center p-4">
   <div class="bg-white rounded-xl shadow-2xl w-full" style="max-width:920px">
     <div class="flex justify-between items-center p-4 border-b">
       <h2 class="text-lg font-bold text-gray-800">🏠 3D Room Visualizer</h2>
@@ -755,6 +777,19 @@
     window.addEventListener('resize', resizeCanvas);
     // Give layout a moment to settle, then scale
     setTimeout(resizeCanvas, 100);
+
+    // Mobile Tools Toggle
+    function toggleMobileTools() {
+        const sidebar = document.querySelector('.studio-sidebar');
+        const backdrop = document.getElementById('mobileToolsBackdrop');
+        if(sidebar.classList.contains('show-tools')) {
+            sidebar.classList.remove('show-tools');
+            backdrop.classList.add('hidden');
+        } else {
+            sidebar.classList.add('show-tools');
+            backdrop.classList.remove('hidden');
+        }
+    }
 
     // Pinch-to-zoom for touch devices (Phase 24)
     canvas.on('touch:gesture', function(e) {
