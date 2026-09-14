@@ -114,40 +114,46 @@
     /* Phase 24: Mobile Responsiveness */
     @media (max-width: 768px) {
         .studio-container {
-            flex-direction: column; 
-            height: 100%;
+            flex-direction: row; 
+            height: 85vh;
             position: relative;
             border: none;
         }
         .studio-sidebar {
             display: none; /* Hidden by default on mobile, toggled via menu icon */
-            position: fixed;
+            position: absolute;
+            top: 0;
             bottom: 0;
             left: 0;
-            right: 0;
-            width: 100%;
-            height: 60vh;
-            border-top: 1px solid #e2e8f0;
+            width: 320px;
+            max-width: 85vw;
+            height: 100%;
+            border-right: 1px solid #e2e8f0;
+            border-top: none;
             padding: 16px;
             z-index: 50;
-            box-shadow: 0 -10px 25px -5px rgba(0, 0, 0, 0.1);
-            border-radius: 20px 20px 0 0;
+            box-shadow: 10px 0 25px -5px rgba(0, 0, 0, 0.2);
+            border-radius: 0;
             background: white;
+            overflow-y: auto;
         }
         .studio-sidebar.show-tools {
             display: block;
         }
         .studio-main {
-            height: 70vh; /* Taller canvas on mobile */
+            height: 100%; 
+            width: 100%;
             overflow: hidden; 
             padding: 10px;
         }
         .studio-toolbar {
-            position: static;
+            position: absolute;
+            top: 10px;
+            right: 10px;
             flex-wrap: wrap;
-            justify-content: center;
-            margin-bottom: 10px;
-            width: 100%;
+            justify-content: flex-end;
+            margin-bottom: 0;
+            width: auto;
         }
         .mb-4.flex.items-center.justify-between {
             flex-direction: column;
